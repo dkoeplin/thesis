@@ -1,0 +1,259 @@
+\begin{figure*}
+\small\centering
+\begin{tabular}{l}
+{\small\begin{tabular}{ll|l|l}
+\noalign{\hrule height 1.5pt}
+{\bf Parallel Pattern Definition} & & {\bf High Level Language Example} & {\bf PPL Example} \\ \hline
+
+{%\begin{lstlisting}[numbers=none,mathescape=true]
+\scriptsize{\textbf{\texttt{Multidimensional}}}
+%\end{lstlisting}
+} & & \\
+\vspace{-0.075cm}
+{\begin{lstlisting}[numbers=none,mathescape=true]
+Map(d)(m)\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+: V$_D$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+// Size s vector multiplied by 2
+\end{lstlisting}} & {} \\
+
+\vspace{-0.075cm}
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+x.map{ e => 2*e }
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+map(s){i => 2*x(i) }
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+// Addition of two size s vectors
+\end{lstlisting}} & {} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+x.zip(y){ (a,b) => a + b }
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+map(s){i => x(i) + y(i) }
+\end{lstlisting}} \\
+\vspace{-0.25cm}
+
+{} & {} & {} & {} \\ \arrayrulecolor[gray]{0.8}\hline
+\vspace{-0.25cm}
+{} & {} & {} & {} \\
+\vspace{-0.075cm}
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+MultiFold(d)(r)(z)(f)(c)
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+: V$_R$
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+// Reduction of vector of s elements
+\end{lstlisting}} & {} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+x.fold(1){ (a,b) => a * b }
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+multiFold(s)(1)(1){ i =>
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+  (0, acc => acc + x(i))
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+}{ (a,b) => a + b }
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+// Row summation in s x t matrix
+\end{lstlisting}} & {} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+x.map{ row =>
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+multiFold(s,t)(r)(zeros(s)){ (i,j) =>
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+  row.fold(0){ (a,b) => a + b }
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+  (i, acc => acc + x(i,j) )
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+}
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+}{ (a,b) => map(s){ i => a(i) + b(i) } }
+\end{lstlisting}} \\ \arrayrulecolor[gray]{0.8}\hline
+\vspace{-0.075cm}
+
+{%\begin{lstlisting}[numbers=none,mathescape=true]
+\scriptsize\textbf{\texttt{One-dimensional}}
+%\end{lstlisting}
+} & & \\
+
+\vspace{-0.075cm}
+{\begin{lstlisting}[numbers=none,mathescape=true]
+FlatMap(d)(n)
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+: V$_1$
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+// Filter positives from s elements
+\end{lstlisting}} & {} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+x.flatMap{ e =>
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+flatMap(s){ i =>
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+  if (e > 0) [e] else [] }
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+  if (x(i) > 0) [x(i)] else [] }
+\end{lstlisting}} \\
+\vspace{-0.25cm}
+
+{} & {} & {} & {} \\ \arrayrulecolor[gray]{0.8}\hline
+\vspace{-0.25cm}
+{} & {} & {} & {} \\
+\vspace{-0.075cm}
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+GroupByFold(d)(z)(g)(c)
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+: (K,V)$_1$
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+// Histogram with bin width 10
+\end{lstlisting}} & {} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+x.groupByFold(0){ e =>
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+groupByFold(s)(0){ i =>
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+  (e/10, 1)
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+  (x(i)/10, acc => acc + 1)
+\end{lstlisting}} \\
+\vspace{-0.075cm}
+
+{} & {} & {\begin{lstlisting}[numbers=none,mathescape=true]
+}{ (a,b) => a + b }
+\end{lstlisting}} &
+{\begin{lstlisting}[numbers=none,mathescape=true]
+}{ (a,b) => a + b }
+\end{lstlisting}} \\
+\vspace{-0.3cm}
+\\ \arrayrulecolor{black}\hline
+
+\end{tabular}}
+\vspace{0.1cm} \\
+{\begin{tabular*}{0.95\textwidth}{llll}
+{\bf User-defined Values} & & & \\ \hline
+{\begin{lstlisting}[numbers=none,mathescape=true]
+d : Integer$_D$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+input domain
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+m : Index$_D$ => V
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+value function
+\end{lstlisting}} \\
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+r : Integer$_R$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+output range
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+n : Index => V$_1$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+multi-value function
+\end{lstlisting}} \\
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+z : V$_R$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+init accumulator
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+f : Index$_D$ => (Index$_R$, V$_R$ => V$_R$)
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+(location, value) function
+\end{lstlisting}} \\
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+c : (V$_R$,V$_R$) => V$_R$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+combine accumulator
+\end{lstlisting}} \hspace{51pt} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+g : Index => (K, V => V)$_1$
+\end{lstlisting}} &
+
+{\begin{lstlisting}[numbers=none,mathescape=true]
+(key, value) function
+\end{lstlisting}} \\
+\noalign{\hrule height 1.5pt}
+
+\end{tabular*}}
+\\
+\end{tabular}
+\caption{\label{fig:ppl-syntax}Definitions and usage examples of supported parallel patterns.}
+\end{figure*}

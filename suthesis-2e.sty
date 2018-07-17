@@ -414,12 +414,6 @@ AND THE COMMITTEE ON GRADUATE STUDIES}
         \vfill
         \begin{center}
 \large
-%                \sc a dissertation\\
-%                \lowercase\expandafter{\@whichsub}\\
-%                of stanford university\\
-%                in partial fulfillment of the requirements\\
-%                for the degree of\\
-%                doctor of philosophy \uppercase\expandafter{\@whichend}
                 A DISSERTATION\\
                 \uppercase\expandafter{\@whichsub}\\
                 OF STANFORD UNIVERSITY\\
@@ -429,8 +423,8 @@ AND THE COMMITTEE ON GRADUATE STUDIES}
         \end{center}
         \vfill
         \begin{center}
-                \rm \@author\\
-                \@submitdate\\
+                \rm DAVID KOEPLINGER\\
+                AUGUST 2018\\
         \end{center}\vskip.5in\newpage}
 
 \def\thesiscopyrightpage{%
@@ -457,7 +451,6 @@ AND THE COMMITTEE ON GRADUATE STUDIES}
 \newlength{\signaturespace}
 \setlength{\signaturespace}{.5in}
 
-
 \long\def\signature#1{%
 \begin{flushright}
 \begin{minipage}{5in}
@@ -477,7 +470,7 @@ of Doctor of Philosophy.
 \begin{flushright}
 \begin{minipage}{5in}
 \parindent=0pt
-\hfill Approved for the Stanford University Committee on Graduate Studies
+Approved for the Stanford University Committee on Graduate Studies
 \par
 \vspace{\signaturespace}
 \hbox to 5in{\hfil\begin{tabular}{@{}l@{}}\vrule width 3in height
@@ -492,6 +485,7 @@ of Doctor of Philosophy.
 \def\thepage{}
 \thispagestyle{myheadings}
 \markboth{\rm \@author}{\rm \@author}\fi
+{\hfill\@author \vfill}
 \signature{(\@principaladviser)\quad Principal \advis@r}
   \vfill
 % if second principal advisor

@@ -1,39 +1,92 @@
-% Stanford University PhD thesis style -- modifications to the report style
-% This is unofficial so you should always double check against the
-% Registrar's office rules
-% See http://library.stanford.edu/research/bibliography-management/latex-and-bibtex
-% 
-% Example of use below
-% See the suthesis-2e.sty file for documentation
-%
 \documentclass{report}
-\usepackage{suthesis-2e}
-\dept{Computer Science}
+\usepackage{suthesis-2e}  %% Thesis format
+\usepackage[scaled]{beramono}
+\usepackage[T1]{fontenc}  %% Type 1 fonts
+
+\usepackage{booktabs}     %% For formal tables: http://ctan.org/pkg/booktabs
+\usepackage{multirow}     %% For tables with merged columns/rows
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{dcolumn}
+
+\usepackage{subcaption}   %% For complex figures with subfigures/subcaptions
+                          %% http://ctan.org/pkg/subcaption
+
+\usepackage{graphicx}     %% Including graphics
+\usepackage{listings}     %% Code listing
+
+\usepackage{amssymb}      %% Math symbols
+\usepackage{amsmath}      %% Matrices
+\usepackage{inputenc}     %% ?????
+
+\usepackage{hyperref}     %% URLs
+\usepackage{xcolor}       %% Colors
+
+\usepackage{tikz}         %% Bar plot
+
+
+\newcommand{\todo}[1]{{\color{red} \bf [TODO: #1]}}
+
+
+%%%%% Custom column types %%%%%
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\newcommand{\mcl}[1]{\multicolumn{1}{c}{#1}}
+\newcommand{\mc}[1]{\multicolumn{1}{c}{\bf #1}}
+\newcommand{\ml}[1]{\multicolumn{1}{l}{\bf #1}}
+\newcommand{\mb}[1]{\multicolumn{1}{l}{\bf #1}}
+
+\newcommand*{\ep}{\ensuremath{\prime}}
+
+\newcommand{\argg}[1]{\textbf{\fontsize{8}{10}\texttt{#1}}}
+
+%%%% Set up Bera Mono font %%%%
+\makeatletter
+\newcommand\beramonott{%
+  \def\fvm@Scale{0.85}        % scales the font down
+  \fontfamily{fvm}\selectfont % selects the Bera Mono font
+}
+\makeatother
+
+
+\hypersetup{              % Formatting for embedded links
+  colorlinks,
+  linkcolor={red!50!black},
+  citecolor={blue!50!black},
+  urlcolor={blue!80!black}
+}
+
+\dept{Electrical Engineering}
+
+\input{text/listings}
 
 \begin{document}
-\title{How to Write Theses\\
-            With Two Line Titles}
-\author{John Henry Candidate}
-\principaladviser{John Parker}
-\firstreader{John Green}
-\secondreader{John BigBooty}
-\thirdreader{Jane Supernumerary} %if needed
-\fourthreader{Severus Snape} %if needed
- 
+\title{DSLs to Reconfigurable Hardware\\Design of the Spatial Language and Compiler}
+\author{David Koeplinger}
+\principaladviser{Kunle Olukotun}
+\firstreader{Mark Horowitz}
+\secondreader{Matei Zaharia}
+
 \beforepreface
-\prefacesection{Preface}
-This thesis tells you all you need to know about...
 \prefacesection{Acknowledgments}
 I would like to thank...
+\prefacesection{Abstract}
+\input{text/abstract}
 \afterpreface
 
-\chapter{Introduction}
-...
-\chapter{Conclusions}
-...
+\input{text/1-intro/intro}
+\input{text/2-background/background}
+\input{text/3-related/related}
+\input{text/4-delite/delite}
+\input{text/5-spatial/spatial}
+\input{text/6-argon/argon}
+\input{text/7-conclusion/conclusion}
+
+\cite{sdaccel}
+
+
 \appendix
-\chapter{A Long Proof}
-...
 \bibliographystyle{plain}
-\bibliography{mybib}
+\bibliography{references}
 \end{document}

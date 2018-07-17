@@ -1,0 +1,285 @@
+\chapter{Background}
+\label{background}
+
+It is critical for a language with the purpose of abstracting hardware design to strike the right
+balance between high-level constructs for improving programmer productivity and low-level syntax for tuning performance. Here, we motivate our discussion of Spatial by outlining requirements for achieving a good balance between productivity and achievable performance.
+%\todo{In such a language, common tasks like communicating with the host, interfacing with external I/O, transferring memory, and specifying state machines should be simple.
+%At the same time, the language should also give the user the ability to optimize their code. 
+%Users should have an explicit view of the memory hierarchy and be able to concisely segment accelerator code from CPU code.}
+
+\subsection{Control}
+For most applications, control flow can be expressed in abstract terms. Data-dependent branching (e.g. if-statements) 
+and nested loops are found in almost all applications, and in the common case these loops have a statically calculable
+initiation interval. These loops correspond to hierarchical pipelines which can be automatically optimized by the 
+compiler in the majority of cases. The burden for specifying these control structures should therefore fall on the 
+compiler, with the user intervening only when the compiler lacks information to optimize the loop schedule.
+
+\subsection{Memory Hierarchy}
+On most reconfigurable architectures, there are at least three levels of memory hierarchy: off-chip (DRAM),
+on-chip scratchpad (e.g. ``block RAM'' on FPGAs), and registers. 
+Unlike CPUs, which present their memory as a uniformly accessible address space,
+reconfigurable architectures require programmers to explicitly manage the memory hierarchy.
+Previous languages like Sequoia~\cite{sequoia} have demonstrated the benefits of explicit notions of memory hierarchy
+to programming language design. Moreover, loop unrolling and pipelining are essential for performance and area utilization, but these optimizations
+require on-chip memories to be partitioned, banked, and buffered to supply the bandwidth necessary for concurrent accesses.
+These decisions are made by statically analyzing memory access patterns with respect to loop iterators.
+The accelerator design language should therefore give the user a view of the target memory 
+hierarchy and should include notions of loop iterators to enable automatic memory partitioning, banking, and buffering optimizations for on-chip bandwidth.
+
+%This means that spatial architectures require users to partition data structures and to manage concurrent accesses with memory banking and buffering.
+%However, in most cases, partitioning, banking, and buffering can be determined based on statically analyzable access patterns.
+In addition to on-chip memory management, accelerator designs must also explicitly administer transfers between off-chip and on-chip memories.
+This entails creating a soft memory controller which manages the off-chip memory.
+These memory controller implementations vary widely across different target architectures and vendors.
+However, common across these architectures is the need to optimize the memory controller based on access pattern.
+Unpredictable, data-dependent requests require more specialized memory controller logic than predictable, linear accesses.
+Instead of focusing on target-specific details, the language should allow users to focus on optimizing each
+transfer based on its access pattern. 
+The accelerator language should therefore abstract these transfers as much as possible, while also giving constructs which specialize based on access patterns.
+
+\subsection{Host Interfaces}
+Spatial architectures are commonly used as offload application accelerators.
+In this execution model, the host generally allocates memory, prepares data structures, and interfaces with larger heterogeneous networks to receive and send data.  
+Once data is prepared, the host invokes the accelerator and either waits for completion (``blocking'' execution)
+or interacts with the perpetually running accelerator in a polling or interrupt manner (``non-blocking'' execution).  
+%Manual administration of communication between the CPU and the host is generally not difficult, but it can be tedious and daunting for new users of spatial architectures. 
+While management of communication and accelerator execution are commonly supported, the associated libraries and function calls vary widely across platforms and vendors, making code difficult to port or compare.
+For communication with the CPU host, a higher level language for accelerator design should provide constructs which abstract away the target architecture as much as possible.
+
+
+\subsection{Design Space Exploration}
+As with any hardware design, accelerator design spaces can be extremely large and cumbersome to explore. 
+While making optimizations like loop pipelining and memory banking automatic help to improve productivity, these transformations leave the compiler with numerous choices about how to allocate resources.
+These decisions can accumulate large performance/area tradeoff spaces which combine exponentially with application complexity. In a fixed implementation
+of general matrix multiplication, there is a large design space that includes the dimensions of on-chip tiles that hold portions of the full matrices and decisions
+about the parallelizations of loops that iterate over tiles as well as loops that iterate within these tiles.  The parameters shown in lines 17 -- 21 of Figure~\ref{fig:matmult} expose just a few of these many design space parameters.
+Previous work~\cite{dhdl} has shown how making the compiler aware of design parameters like pipelining, unrolling factors, and tile sizes can be used to speed up and automate parameter space exploration. Abstract hardware languages should therefore include both language and compiler support for design space parameters.
+
+%In hardware design, scheduling of operations in terms of pipelining and parallelizing various parts of a program, can be challenging. Programmers attempting to optimize an application's performance must account for memory access hazards and complicated design space tradeoffs between scheduling choices.
+
+A primary requirement for good accelerator design tools is the ability
+to capture and represent design points along all important dimensions.
+Specifically, design tools must be able to capture
+application-level parameters (e.g., input sizes, bitwidth, data layout),
+architectural parameters (parallelism factors, buffer sizes, banking factors
+pipelining levels, off-chip memory streams) and microarchitectural parameters
+(e.g., on-chip memory word width). Having a representation rich in parallelism
+information allows for more accurate estimations, thorough design space
+exploration, and efficient code generation.
+
+%\gist{Requirement: Tools must be aware of routing resources and optimizations
+%performed by low-level tools}
+In addition to application characteristics, both heterogeneity within FPGAs
+and low-level optimizations done by logic synthesis tools have
+significant impact on required design resources. FPGA resource
+utilization does not just depend on the compute and
+memory operations in a given design; a non-trivial amount of resources are typically used
+to establish static routing connections to move data between two points, often rendering them unavailable
+for ``real'' operations. In addition, low-level
+logic synthesis tools often perform optimizations like LUT-packing or logic duplication for signal fanout
+reduction that alter resource usage. Off-chip memory communication requires FPGA
+resources to implement various queues and control logic. Such effects from low-level tools
+must be factored into the design tools to provide accurate estimates of design resource requirements.
+
+%\gist{Here is what we believe are requirements of a good tool}
+A good FPGA design tool should have the following features:
+\begin{itemize}
+  \item \emph{Representation}: The tool must internally represent hardware using a general and parameterizable
+    representation. This representation must preserve information regarding data locality,
+    memory access pattern and parallelism in the input at all levels of nesting.
+    Such a representation must be target-agnostic and should be targetable from high-level
+    language constructs.
+  \item \emph{Estimation}: The tool must quickly analyze a design in the above representation
+    and estimate metrics such as cycle counts and FPGA resource requirements for a target FPGA.
+  \item \emph{DSE}: The tool must be able to leverage the estimators to prune the large design search space,
+    walk the space of designs, and find the Pareto-optimal surface.
+  \item \emph{Generation}: The tool must be able to automatically generate hardware which can then be
+    synthesized and run on the target FPGA. Without this feature, hardware would typically
+    be generated using separate toolchains for estimation and generation, which makes
+    accurate estimation much harder.
+\end{itemize}
+
+% Notes
+% HIPACC:
+% * source - to - source C like compiler
+% * generate CUDA, openCL, Renderscripts target GPU
+% * make use of different memory hierarchy based on limit set of access pattern
+% * support fix set of reduction function
+% * unroll only if kernel size is known
+% * heuristic pick best configuration (similar to our DSE)
+% 
+% Rigel:
+% * Generate verilog 
+% * Coarse-grain pipeline
+% * very similar control semantics to plasticine. Use
+% tokens/back pressure to allow each pipeline stage to fire at their perspective rate
+% * Multi-rate line buffer template 
+% 
+% Darkroom 
+% * target ASIC, FPGA, fast CPU
+% * generate structured verilog
+% * line buffer
+% * scheduling for inner loop pipeline. Use ILP to improve pipeline delay
+% 
+% PolyMage
+% * point=wise, stencil, sampling, operation
+% * functional (in a kind of awkward way)
+% * python
+% * generate openMP/C++
+% * generate high-level synthesis tool
+% * line buffer
+
+\input{figs/ppl}
+
+Parallel patterns are becoming a popular programming abstraction for writing high level applications that can still be efficiently mapped to hardware targets such as multicore~\cite{scala,haskell,delite-tecs14}, clusters~\cite{mapreduce,zaharia10spark,spartan}, GPUs~\cite{catanzaro11copperhead,micro14lee}, and FPGAs~\cite{auerbach10lime,george14fpl}. In addition, they have been shown to provide high productivity when implementing applications in a wide variety of domains~\cite{ecoop13sujeeth,pldi13halide}.We refer to the definitions presented in Figure~\ref{fig:ppl-syntax} as the parallel pattern language (PPL).
+The definitions on the left represent the atoms in the intermediate language used in our compiler for analysis, optimization, and code generation. The code snippets on the right show common examples of how users typically interact with these patterns in a functional programming language via collections operations and how those examples are represented in PPL. The syntactic structure is essentially the same except that the input domain is inferred from the shape of the input collection. Using explicit indices in the intermediate language allows us to model more user-facing patterns and more input access patterns with fewer internal primitives.
+%, e.g., the classic operations of \emph{map} and \emph{zipWith} are both covered by PPL \emph{Map},
+%and enables us to express more complicated access patterns of the input data.
+
+We separate our parallel patterns into two groups. Multidimensional patterns have an arbitrary arity domain and range, but are restricted to a range which is a fixed function of the domain. One-dimensional patterns can have a dynamic output size. All patterns generate output values by applying a function to every index in the domain. Each pattern then merges these values into the final output in a different way. The output type $V$ can be a scalar or structure of scalars. We currently do not allow nested arrays, only multidimensional arrays. We denote multidimensional array types as $V_R$, which denotes a tensor of element type $V$ and arity $R$. In Figure~\ref{fig:ppl-syntax} subscript $R$ always represents the arity of the output range, and $D$ the arity of the input domain.
+
+% \begin{figure}\centering
+% \begin{lstlisting}[mathescape=true]
+% points: Array2D[Float](n,d) // data to be clustered
+% centroids: Array2D[Float](k,d) // current centroids
+
+% // Assign each point to closest centroid
+% minDistIndex = map(n){ i =>
+%   pt1 = points.slice(i, *)
+%   minDistWithIndex = fold(k)((max, -1)){ j =>
+%     pt2 = centroids.slice(j, *)
+%     dist = fold(d)(0){ k =>
+%              acc => acc + square(pt1(k) - pt2(k))
+%            }{ (a,b) => a + b }
+%     acc => if (acc._1 < dist) acc else (dist, j)
+%   }{ (a,b) => if (a._1 < b._1) a else b }
+%   minDistWithIndex._2
+% }
+
+% // Sum of points assigned to each centroid
+% sums = multiFold(n)(k,d)(zeros(1,d)){ i =>
+%   ((minDistIndex(i), 0), acc => {
+%     pt = points.slice(i, *)
+%     map(d){ j => acc(j) + pt(j) } })
+% }{ (a,b) => map(d){ j => a(j) + b(j) } }
+
+% // Number of points assigned to each centroid
+% counts = multiFold(n)(k){ i => (minDistIndex(i),
+%   acc => acc + 1 )}{ (a,b) => a + b }
+
+% // Average assigned points to compute new centroids
+% newCentroids = map(k,d){ (i,j) =>
+%   sums(i,j) / counts(i)
+% }
+% \end{lstlisting}
+% \caption{$k$-means clustering using the parallel patterns in Figure~\ref{fig:ppl-syntax}.}
+% \label{fig:kmeans}
+% \end{figure}
+
+\begin{figure}\centering
+\begin{lstlisting}[language=Scala]
+//data to be clustered, size n x d
+val points: Array[Array[Float]] = ...
+
+// current centroids, size k x d
+val centroids: Array[Array[Float]] = ...
+
+// Assign each point to the closest centroid by grouping
+val groupedPoints = points.groupBy { pt1 =>
+  // Assign current point to the closest centroid
+  val minDistWithIndex = centroids.map { pt2 =>
+    pt1.zip(pt2).map { case (a,b) => square(a - b) }.sum
+  }.zipWithIndex.minBy(p => p._1)
+  minDistWithIndex._2
+}
+
+// Average of points assigned to each centroid
+val newCentroids = groupedPoints.map { case (k,v) =>
+  v.reduce { (a,b) =>
+    a.zip(b).map { case (x,y) => x + y }
+  }.map { e => e / v.length }
+}.toArray
+\end{lstlisting}
+\caption{K-Means clustering implemented using Scala collections. In Scala, \textunderscore\texttt{1} and \textunderscore\texttt{2} refer to the first and second value contained within a tuple.}
+\label{fig:kmeans}
+\end{figure}
+
+\begin{figure}\centering
+\begin{lstlisting}
+points: Array2D[Float](n,d) // data to be clustered
+centroids: Array2D[Float](k,d) // current centroids
+
+// Sum and number of points assigned to each centroid
+(sums,counts) = multiFold(n)((k,d),k)(zeros((k,d),k)){ i =>
+  pt1 = points.slice(i, *)
+  // Assign current point to the closest centroid
+  minDistWithIndex = fold(k)((max, -1)){ j =>
+    pt2 = centroids.slice(j, *)
+    dist = fold(d)(0){ p =>
+      acc => acc + square(pt1(p) - pt2(p))
+    }{ (a,b) => a + b }
+    acc => if (acc._1 < dist) acc else (dist, j)
+  }{ (a,b) => if (a._1 < b._1) a else b }
+
+  minDistIndex = minDistWithIndex._2
+  sumFunc = ((minDistIndex, 0), acc => {
+    pt = points.slice(i, *)
+    map(d){ j => acc(j) + pt(j) }
+  })
+  countFunc = (minDistIndex, acc => acc + 1)
+
+  (sumFunc, countFunc)
+}{ (a,b) => {
+  pt = map(k,d){ (i,j) => a._1(i,j) + b._1(i,j) }
+  count = map(k){ i => a._2(i) + b._2(i) }
+  (pt, count)
+} }
+
+// Average assigned points to compute new centroids
+newCentroids = map(k,d){ (i,j) =>
+  sums(i,j) / counts(i)
+}
+\end{lstlisting}
+\caption{K-Means clustering represented using the parallel patterns in Figure~\ref{fig:ppl-syntax} after fusion and code motion.}
+\label{fig:kmeans-fused}
+\end{figure}
+
+
+\emph{Map} generates a single element per index, aggregating the results into a fixed-size output collection.
+Note that the value function can close over an arbitrary number of input collections, and therefore this pattern can represent classic parallel operations like \emph{map}, \emph{zip},
+and \emph{zipWithIndex}.
+
+\emph{MultiFold} is a generalization of a \emph{fold} which reduces generated values into a specified region of a (potentially) larger accumulator using an associative combine function.
+The initial value $z$ is required to be an identity element of this function, and must have the same size and shape as the final output.
+The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator. Note that a traditional \emph{fold} is the special case of MultiFold where every generated value is the full size of the accumulator.
+$f$ then converts each index into a function that consumes the specified slice of the current accumulator and returns the new slice. If the pattern's implementation maintains multiple partial accumulators in parallel, the combine function $c$ reduces them into the final result.
+
+\emph{FlatMap} generates an arbitrary number of values per index.
+These values are all concatenated into a flattened output.
+As the output size can only be determined dynamically, we restrict FlatMap to one-dimensional domains so that dynamically growing the output is easily defined.
+Note that this primitive also easily expresses a \emph{filter}.
+
+\emph{GroupByFold} reduces generated values into one of many buckets where the bucket is selected by generating a key along with each value, i.e. it is a fused version of a \emph{groupBy} followed by a \emph{fold} over each bucket.
+The operation is similar to \emph{MultiFold} except that the key-space cannot be determined in advance and so the output size is unknown.
+Therefore we also restrict this operation to one-dimensional domains.
+
+
+\input{figs/stripmining}
+
+\paragraph{Example}
+Now that we have defined the operations, we will use them to implement k-means clustering as an example application.
+For reference, first consider $k$-means implemented using the standard Scala collections operations, as shown in Figure~\ref{fig:kmeans}.
+We will use this application as a running example throughout the remainder of this paper, as it exemplifies many of the advantages of using parallel patterns as an abstraction for generating efficient hardware.
+$k$-means consumes a set of $n$ sample points of dimensionality $d$ and attempts to cluster those points by finding the $k$ best cluster centroids for the samples.
+This is achieved by iteratively refining the centroid values.
+(We show only one iteration in Figure~\ref{fig:kmeans} for simplicity.)
+First, every sample point is assigned to the closest current centroid by computing the distance between every sample and every centroid.
+Then new centroid values are computed by averaging all the samples assigned to each centroid.
+This process repeats until the centroid values stop changing.
+Previous work~\cite{rompf12optimizing,brown16clusters,chambers10flumejava} has shown how to stage a DSL application like $k$-means, lowering it into a parallel pattern IR similar to ours, as well as how to perform multiple high-level optimizations automatically on the IR.
+One of the most important of these optimizations is fusing patterns together, both vertically (to decrease the reuse distance between producer-consumer relationships) and horizontally (to eliminate redundant traversals over the same domain).
+Figure~\ref{fig:kmeans-fused} shows the structure of $k$-means after it has been lowered into PPL and fusion rules have been applied.
+We have also converted the nested arrays in the Scala example to our multidimensional arrays.
+This translation requires the insertion of \emph{slice} operations in certain locations, which produce a view of a subset of the underlying data.
+In our implementation, we use the Delite compiler framework \cite{delite-tecs14} to stage applications. For the remainder of this paper, we will assume a high-level translation from user code to PPL exists and always start from the parallel pattern representation.
+

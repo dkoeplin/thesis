@@ -1,0 +1,47 @@
+\begin{table*}[t]
+\small\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+{\bf Pattern }    & { }  & {\bf Strip Mined Pattern} \\ \midrule
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+T[ Map(d)(m) ]
+\end{lstlisting}
+} & \texttt{=} &
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+MultiFold(d/b)(d)(zeros(d)){ i =>
+  (i, acc => Map(b)(T[m]) )
+}(_)
+\end{lstlisting}
+} \\ \midrule
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+T[ MultiFold(d)(r)(z)(g)(c) ]
+\end{lstlisting}
+} & \texttt{=} &
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+MultiFold(d/b)(r)(T[z]){ i =>
+  (i, acc => T[c](acc, MultiFold(b)(r)(T[z])(T[g])(T[c])) )
+}(T[c])
+\end{lstlisting}
+} \\ \midrule
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+T[ GroupByFold(d)(z)(h)(c) ]
+\end{lstlisting}
+} & \texttt{=} &
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+GroupByFold(d/b)(T[z]){ i =>
+  GroupByFold(b)(T[z])(T[h])(T[c])
+}(T[c])
+\end{lstlisting}
+} \\ \midrule
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+T[ FlatMap(d)(f) ]
+\end{lstlisting}
+} & \texttt{=} &
+{\begin{lstlisting}[mathescape=true,numbers=none,basicstyle=\fontsize{8}{8}\selectfont\tt]
+FlatMap(d/b){i => FlatMap(b)(T[f]) }
+\end{lstlisting}
+} \\ \bottomrule
+\end{tabular}
+\caption{Strip mining transformation rules for parallel patterns defined in Figure \ref{fig:ppl-syntax}.}
+\label{table:stripmining}
+\end{table*}

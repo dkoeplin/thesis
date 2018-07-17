@@ -1,0 +1,99 @@
+\begin{table*}[t]
+\small\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+{\bf High Level Language}                            & {\bf PPL }       & {\bf Strip Mined PPL} \\ \midrule
+{\begin{lstlisting}[numbers=none,language=Scala]
+// Element-wise Map
+val x: Array[Float] // length d
+x.map{e => 2*e}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+map(d){i => 2*x(i)}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+multiFold(d/b)(d)(zeros(d)){ii =>
+  xTile = x.copy(b + ii)
+  (i, map(b)(b){i => 2*xTile(i) })
+}(_)
+\end{lstlisting}} \\ \midrule
+{\begin{lstlisting}[numbers=none, language=Scala]
+// Sums along matrix rows
+val x: Array[Array[Float]] // m x n
+x.map{ row =>
+  row.fold(0){ (a,b) => a + b }
+}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none,language=PPL]
+multiFold(m,n)(m)(zeros(m)){ (i,j) =>
+  (i, acc => acc + x(i,j))
+}{(a,b) =>
+  map(n){(j) => a(j) + b(j)}
+}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+multiFold(m/b0,n/b1)(m)(zeros(m)){ (ii,jj) =>
+  xTile = x.copy(b0 + ii, b1 + jj)
+  tile = multiFold(b0,b1)(b0)(zeros(b0)){ (i,j) =>
+    (i, acc => acc + xTile(i,j))
+  }{(a,b) => map(b0){i => a(i) + b(i)} }
+  (ii, acc => map(b0){j => acc(j) + tile(j)})
+}{(a,b) =>
+  multiFold(m/b0)(m)(zeros(m)){ii =>
+    aTile = a.copy(b0 + ii)
+    bTile = a.copy(b0 + ii)
+    (ii, acc => map(b0){i => aTile(i) + bTile(i)})
+  }{(a,b) => map(m){i => a(i) + b(i)}}
+}
+\end{lstlisting}} \\ \midrule
+{\begin{lstlisting}[numbers=none]
+// Simple Filter
+val x: Array[Float] // length d
+x.flatMap{ e =>
+  if (e > 0) e else []
+}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+flatMap(d){i =>
+  if (x(i) > 0) x(i) else []
+}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+flatMap(d/b)(1){ii =>
+  eTile = x.copy(b + ii)
+  flatMap(b){i =>
+    if (eTile(i) > 0) eTile(i) else []
+}}
+\end{lstlisting}} \\ \midrule
+{\begin{lstlisting}[numbers=none]
+// Histogram Calculation
+val x: Array[Float] // length d
+x.groupByFold(0){ r =>
+  (r/10, 1)
+}{ (a,b) => a + b }
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+groupByFold(d)(0){i =>
+  (x(i)/10, 1)
+}{(a,b) => a + b }
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+groupByFold(d/b)(0){ii =>
+  xTile = x.copy(b + ii)
+  groupByFold(b)(0){i =>
+    (xTile(i)/10, 1)
+  }{(a,b) => a + b}
+}{(a,b) => a + b}
+\end{lstlisting}} \\ \bottomrule
+\end{tabular}
+\caption{Examples of the parallel pattern strip mining transformation on Map, MultiFold, FlatMap, and GroupByFold}
+\label{table:stripmine-examples}
+\end{table*}

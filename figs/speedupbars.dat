@@ -1,0 +1,10 @@
+outerprod 7 9 1 2
+sumrows 7 9 1 2
+matmult 7 9 1 2
+tpchq1 7 9 1 2
+tpchq6 7 9 1 2
+sobel 7 9 1 2
+logreg 7 9 1 2
+gda 7 9 1 2
+kmeans 7 9 1 2
+knn 7 9 1 2

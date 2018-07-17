@@ -1,0 +1,59 @@
+\begin{table*}[t]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+{\bf High Level Language}                            & {\bf Strip Mined PPL }       & {\bf Interchanged PPL} \\ \midrule
+{\begin{lstlisting}[numbers=none]
+// Matrix Multiplication
+x: Array[Array[Float]] // m x p
+y: Array[Array[Float]] // p x n
+z = x.map{row =>
+  y.map{col =>
+    row.zipWith(col){(a,b) =>
+      a * b
+    }.sum
+  }
+}
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+multiFold(m/b0,n/b1)(m,n)(zeros(m,n)){(ii,jj) =>
+(*@\color{vbgray}{\vrule}@*)  ((ii,jj), zTile =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  map(b0,b1){(i,j) =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  tile = multiFold(p/b2)(1)(0){ kk =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  xTile = x.copy(b0 + ii, b2 + kk)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  yTile = y.copy(b2 + kk, b1 + jj)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  dprod = fold(b2)(0){ k =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  acc => acc + xTile(i,k) * yTile(k,j)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }{(a,b) => a + b})
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (0, elemTile => elemTile + dprod)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }{(a,b) => a + b}
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  zTile(i,j) + tile
+(*@\color{vbgray}{\vrule}@*)  })
+}(_)
+\end{lstlisting}}
+&
+{\begin{lstlisting}[numbers=none]
+multiFold(m/b0,n/b1)(m,n)(zeros(m,n)){(ii,jj) =>
+(*@\color{vbgray}{\vrule}@*)  tile = multiFold(p/b2)(b0,b1)(...){kk =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  xTile = x.copy(b0 + ii, b2 + kk)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  yTile = y.copy(b2 + kk, b1 + jj)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (0, elemTile =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  map(b0,b1){(i,j) =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  dprod = fold(b2)(0){ k =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  acc => acc + xTile(i,j) * yTile(j,k)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }{(a,b) => a + b}
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  elemTile(i,j) + dprod
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  })
+(*@\color{vbgray}{\vrule}@*)  }{(a,b) =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  map(b0,b1){(i,j) => a(i,j) + b(i,j)
+(*@\color{vbgray}{\vrule}@*)  }
+(*@\color{vbgray}{\vrule}@*)  ((ii,jj), zTile =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  map(b0,b1){(i,j) => zTile(i,j) + tile(i,j)}
+(*@\color{vbgray}{\vrule}@*)  })
+}(_)
+\end{lstlisting}} \\ \bottomrule
+\end{tabular}
+\caption{Example of the pattern interchange transformation applied to matrix multiplication.}
+\label{table:interchange-examples}
+\end{table*}

@@ -1,0 +1,202 @@
+\section{Area and Runtime Estimation}
+\label{sec:modeling}
+%\gist{Characterize DHDL templates and construct models estimate area and runtime in terms of cycle count.
+%Estimation must account for effects from low-level tool optimizations. This drives a DSE loop}
+In this section, we describe our modeling methodology. Our models account for the various
+design parameters for each DHDL template, as listed in Table~\ref{t-hwtemplates}, as well as optimizations done by low-level logic
+synthesis tools in order to accurately estimate resource usage.
+
+\subsection{Modeling Considerations}
+\label{ss:modeling-con}
+%\gist{Low-level tools do fancy optimizations which estimator should be aware of.
+%  Examples: LUT packing, logic duplication, using BRAMs for large delay lines,
+%unavailable LUTs etc. Also, certain device architecture features play a significant role}
+The resource requirements of a given application implemented on an FPGA depend both on the target device and on the toolchain.
+Heterogeneity in the FPGA fabric, use of FPGA resources for routing, and other low-level optimizations performed by logic
+synthesis tools often have a significant impact on the total resource consumption of a design. Since these factors reflect
+the physical layout of computation on the device after placement and routing, they are not captured directly in the application's dataflow graph.
+We identify and account for the following factors:
+%\begin{itemize}
+
+\paragraph{LUT and register packing} Basic compute units in FPGAs are typically composed of a lookup table (LUT), and a small number of single bit multiplexers, registers, and full adders.
+  Modern FPGA LUTs support up to 8-input binary functions but are often implemented using a pair of smaller LUTs~\cite{stratixv,virtex7}.
+  When these LUTs can be configured and used independently, vendor placement tools attempt to ``pack'' multiple small functions into a single 8-input unit.
+  LUT packing can have a significant impact on design resource requirements.
+  In our experiments, we are able to pack about 80\% of the functions in each design in pairs, decreasing the number of used LUTs by about 40\%.
+
+\paragraph{Routing Resources} Logic synthesis tools require a significant amount of resources to establish static routing connections
+between two design points (e.g., a multiplier and a block RAM) which fit in the path's clock period. While FPGAs have dedicated routing resources,
+logic synthesis tools may have the option to use LUTs for routing. These LUTs may then be unavailable to be used for ``real'' compute.
+In our designs, ``route-through'' LUTs typically account for about 10\% of the total number of used LUTs.
+
+
+\paragraph{Logic duplication} Logic synthesis tools often duplicate resources such as block RAMs
+and registers to avoid routing congestion and to decrease fan out. While duplicated registers typically
+encompass around 5\% of the total number of registers required in our designs, we found that block RAM
+duplication can increase RAM utilization by 10 to 100\%, depending on the complexity of the design.
+
+
+\paragraph{Unavailable resources} FPGA resources are typically organized in a hierarchy, such as Altera's Logic Array Block structure (10 LUTs)
+and Xilinx's Slice structure (4 LUTs). Such organizations impose mapping constraints which can lead to
+resources that are rendered unusable. In our experiments, the number of unusable LUTs made up only about 4\% of the design's total LUT usage.
+%\end{itemize}
+%\todo{Need to figure out how to say this.} We focus on one Altera device in this paper, the Stratix V.
+%ALMs in the Stratix V have 4 registers. We experimentally found that in most designs, just over 50 percent
+%of the registers in each ALM is used. Thus, we use a simple model where we assume registers do not
+%contribute to the ALM count unless they number over 2x the number of ALMs used to implement logic.
+%(packed lut count) + max(0, regs/2 - (packed lut count))
+
+\subsection{Methodology}
+In order to model runtime and resource requirements of DHDL designs, we first need an estimate of the area requirements and
+propagation delay of every DHDL template. Area requirements include the number of digital signal processing
+units (DSPs), device block RAMs, LUTs, and registers that each template requires. To facilitate LUT packing estimation,
+we split template LUT resource requirements into the number of ``packable'' and ``unpackable'' LUTs required.
+%For templates with documented implementations such as floating point operations \cite{fp-altera}, we gather resource and cycle data in part by summarizing IP core documentation. However, these user manuals typically do not give resource usage breakdowns at the binary function level.
+We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters as given in Table~\ref{t-hwtemplates}.
+%Our model assumes that all primitive multi-cycle nodes (such as multiply) are fully pipelined.
+Using this data, we create analytical models of each DHDL template's resource requirements and cycle counts for
+a predefined fabric clock. The area and cycle count of controller templates are modeled as functions of the latencies of the nodes contained within them.
+The total cycle count for a \emph{MetaPipe}, for example, is modeled using the recursive function
+\begin{displaymath}
+(N-1)\max(cycles(n) | n \in nodes) + \sum_{n \in nodes} cycles(n)
+\end{displaymath}
+where \emph{N} is the number of iterations of the \emph{MetaPipe} and \emph{nodes} is the set of nodes contained in the \emph{MetaPipe}.
+
+Most templates require about six synthesized designs to characterize their resource and area usage as a function of their parameters. Note that these models include estimates of off-chip memory access latency as a function of the
+number and length of memory commands, as well as contention due to competing accessors. Since template models are application-independent, each needs only be characterized once for a given target device and logic synthesis toolchain. The synthesis times required to model templates can therefore be amortized over many applications.
+%We show a subset of the template models used in our experiments in Table~\ref{table:benchmarks}.
+%\note{not sure I understand this. Which part is app-independent. Presumably the way to explore the space will dependt on the application. Is this only for the device models? }
+
+Using these models, we run a pair of analysis passes over the application's DHDL intermediate representation to estimate design cycle counts and area requirements.
+
+%\begin{table*}
+%\centering\footnotesize
+%\begin{tabular}{m{1.7cm}c{4.7cm}c{4.7cm}m{4.5cm}}
+%\toprule
+%{\bf Node} & {\bf Cycle Count} & {\bf Area} & {\bf Parameters} \\ \midrule
+%TileLd &  & & \\ \midrule
+%TileSt &  & & \\ \midrule
+%Sequential &  & & \\ \midrule
+%Parallel &
+%  \begin{lstlisting}[mathescape=true, numbers=none, language=DHDL]
+%    Cycles[body] + N * Cycles[accum]
+%  \end{lstlisting}
+%   & Area[body] & \texttt{accum}: accumulation loop for reductions \\ \midrule
+%CoarsePipe & & & \\ \midrule
+%Pipe &  & &  \\ \midrule
+%BRAM & 0 & & \\ \midrule
+%Priority Queue & 0 & & \\ \midrule
+%Reg & 1 & & \\ \bottomrule
+%\end{tabular}
+%\caption{Area and cycle count models for DHDL nodes. Note that \emph{BRAM} and \emph{Priority Queue} have no associated cycle counts %as this is accounted for entirely by \emph{Ld} and \emph{St} templates.}
+%\label{table:benchmarks}
+%\end{table*}
+
+\subsubsection{Cycle Count Estimation}
+In the first analysis pass, we estimate the total runtime of the design on the FPGA.
+Since the DHDL intermediate representation is hierarchical in nature, this pass is done recursively.
+The total runtime of \emph{MetaPipe} and \emph{Sequential} nodes is calculated first by determining
+the runtime of all controller nodes contained within them. The total propagation delay of a single
+iteration of a \emph{Pipe} is the length of the body's critical path, calculated using a depth first
+search of the body's subgraph and the propagation delay of all primitive nodes within the graph.
+Input dataset sizes, given as user annotations in the high-level program, are used by the analysis pass
+along with tiling factors to determine the iteration counts for each controller template.
+Iteration counts are then used to calculate the total runtime of the respective controller nodes. %using the equations given in Table~\ref{table:benchmarks}.
+
+
+\subsubsection{Area Estimation}
+Since the FPGA resource utilization of a design is sensitive to factors that are not directly captured
+in the design's dataflow graph, we adopt a hybrid approach in our area analysis.
+
+We first estimate the area of the DHDL design by counting the resource
+requirements of each node using their pre-characterized area models. In \emph{Pipe} bodies, we also
+estimate the resources required for delaying signals. This is done by recursively calculating the
+propagation delay of every path to each node using depth first search. Paths with slack relative to
+the critical path to that node require their width (in bits) multiplied by the slack delay resources.
+Delays over a synthesis tool-specific threshold are modeled as block RAMs.
+Otherwise, they are modeled as registers. Note that this estimation assumes ASAP scheduling.
+
+We model LUT routing usage, register duplication, and unavailable LUTs using a set of small artificial
+neural networks implemented using the Encog machine learning library~\cite{encog}.
+Each network has three fully connected layers with eleven input nodes, six hidden layer nodes, and a single output node. We chose to use
+three layer neural networks as they have been proven to be capable of fitting a wide number of function classes with arbitrary precision, including polynomial functions of any order~\cite{science}.
+One network is trained
+for each factor on a common set of 200 design samples with varying levels of resource usage to give a representative sampling of the space. Choosing the correct
+network parameters to obtain the lowest model error is typically challenging, but in our experiments we found that above four nodes in the hidden layer,
+the exact number of hidden layer nodes made little difference.
+Duplicated block RAMs are estimated as a linear function of the number of routing LUTs, as we found that this gave the best estimate of design routing complexity in practice. This linear function was fit using the same data used to train the neural networks. Like the template models, these neural networks are application independent and only need to be trained once for a given target device and toolchain.
+
+We use the raw resource counts as an input to each of our neural networks to obtain global estimates for routing LUTs,
+duplicated registers, and unavailable LUTs. We estimate the number of duplicated block RAMs using the routing LUTs.
+These estimates are then added to the raw resource counts to obtain a pre-packing resource estimate. For the purposes
+of LUT packing, we assume routing LUTs are always packable.
+
+Lastly, we model LUT packing using the simple assumption that all packable LUTs will be packed. The target device
+in our experiments supports pairwise LUT packing, so we estimate the number of compute units used for logic as
+the number of unpackable LUTs plus the number of packable LUTs divided by two. We assume that each compute unit
+will use two registers on average. We model any registers unaccounted for by logic compute units as requiring
+compute units with two registers each. This gives us the final estimation for LUTs, DSPs, and BRAM.
+
+%To account for resources utilized by nodes in the dataflow graph, we then perform a detailed characterization of all primitive nodes
+%in DHDL and use the data to count the resources required to implement the datapath.
+
+%We use a simple model for LUT packing, where we assume that pairs of LUTs which
+%can be packed are packed.
+%Table \todo{Table with control, memory, and mem generator templates as functions + description of what each variable is - should have four columns(?): node name, area function, and cycle function, and variable description?} gives examples of the resource usage and cycle latency of memory, controller, and memory command generator templates as functions of their respective parameters.
+%We model each of the factors listed in section~\ref{ss:modeling-con} using a two layer artificial neural networks
+
+%We use the Encog machine learning library~\cite{encog} to implement our neural network.
+
+\subsection{Design space exploration}
+%\gist{We explore this list (have a list somewhere) of design points
+%  for each benchmark. Input dataset size is considered during DSE
+%as it impacts the search space. We perform simple optimizations
+%to prune search space to discount invalid combinations and designs
+%which will not fit in the given amount of resources}
+Our design space exploration tool uses the resource and cycle count estimates
+to explore the space of designs described by the parameters in Table~\ref{t-hwtemplates}.
+As we are dealing with large design spaces on the order of millions of points even for small benchmarks,
+we prune invalid and suboptimal points in the search space using a few simple heuristics:
+\begin{itemize}
+  \item Parallelization factors considered are integer divisors of the respective iteration counts. We use this pruning strategy because non-divisor factors create edge cases which require additional modulus operations. These operations can significantly increase the latency and area of address calculation, typically making them poor design parameter choices \cite{raghus-paper}.
+  \item Tile sizes considered are divisors of the dimensions of the annotated data size. Similar to parallelization factors, tile sizes with edge cases are usually suboptimal as they increase load and store area and latency with additional indexing logic.
+  \item Automatic banking of on-chip memories eliminates the memory banks as an independent variable. This prunes a large set of suboptimal design points where on-chip memory bandwidth requirements do not match the amount of parallelization.
+  \item The total size of each local memory is limited to a fixed maximum value.
+  %\item Design points that have larger parameter sizes than a previously estimated point
+  %  are pruned if the previously estimated point does not fit in the given FPGA resources.
+\end{itemize}
+
+These heuristics defines a ``legal'' subspace of the total design space. In our experiments, we randomly generate estimates for up to $75,000$ legal points to give a representative view of the entire design space. We immediately discard illegal points.
+
+% ------------------ ALREADY COMMENTED -------------------------
+%Using the DHDL templates described in the previous section, we estimate total FPGA resource usage and runtime. Our estimates are made using a set of models at the template and design level. While creating these models requires a set of pre-characterization hardware synthesis runs, this characterization is application-independent and need only be run once for a given target device.
+
+%Creating these models requires a set of pre-characterization hardware synthesis runs, but benchmarks used for characterization tend to be much smaller, and hence synthesize faster, than any real application. More importantly, characterization is application-independent and need only be run once for a given target FPGA.
+
+%Template area and cycle models are based on simple, individual characterizations.
+% --------------------------------------------------------------
+
+% ---------------------- ALREADY COMMENTED ------------------------------------
+%\begin{itemize}
+%\item Template area and cycle count based on individual characterization (include table for controllers?)
+%\item ALM packing based on rough estimate
+%\item Simple ASAP schedule estimation for adding delay registers along combinational paths
+%\item Routing for ALMs and regs based on neural network model, as is unavailable ALM model
+%\item Routing BRAMs?
+%\end{itemize}
+% -----------------------------------------------------------
+
+
+
+
+% ---------------------- ALREADY COMMENTED ------------------------------------
+%Characterization and modeling is device-specific but application-independent.
+%Once created, each model can be used across many different applications on the same
+
+
+%Even a relatively small number of parameters can lead to large design spaces. If hardware place and route pass is used for evaluation, each
+%Naively implemen automated design space acceleration of application-specific accelerators is quite time consuming, both because of the size of space and the length of time
+
+%Modern FPGAs include
+
+

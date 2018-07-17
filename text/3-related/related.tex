@@ -1,0 +1,277 @@
+\chapter{Related Work}
+\label{related}
+
+
+\paragraph{Tiling}
+Previous work on automated loop tiling has largely focused on tiling imperative programs
+using polyhedral analysis~\cite{bondhugula08,pouchet10phd}.
+There are many existing tools---such as Pluto~\cite{pluto08pldi},
+PoCC~\cite{pouchet11popl}, CHiLL~\cite{chen2008chill},
+and Polly~\cite{grosser2012polly}---that use polyhedral analysis
+to automatically tile and parallelize programs.  These tools restrict memory
+accesses within loops to affine functions of the loop iterators.
+As a consequence, while they perform well on affine sections of programs,
+they fail on commonly occurring data-dependent operations
+like \emph{filters} and \emph{groupBys}~\cite{benabderrahmane10cc}. In order to handle these operations,
+recent work has proposed using preprocessing steps which segment programs into affine
+and non-affine sections prior to running polyhedral analysis tools~\cite{venkat}.
+
+While the above work focused on the analysis of imperative programs, our work
+analyzes functional parallel patterns, which offer a strictly higher-level representation
+than simple imperative \emph{for} loops.
+In this paper, we show that because of the additional semantic information
+available in patterns like \emph{groupBy} and \emph{filter},
+parallel patterns can be automatically tiled using
+simple transformation rules, without the restriction that all memory accesses
+are purely affine.
+Little previous work has been done on automated tiling of functional
+programs composed of arbitrarily nested parallel patterns.
+Hielscher proposes a set of formal rules for tiling parallel operators \emph{map}, \emph{reduce}, and \emph{scan}
+in the Parakeet JIT compiler, but these rules can be applied only for a small subset of nesting combinations \cite{parakeet}.
+Spartan~\cite{spartan} is a runtime system with a set of high-level operators
+(e.g., \emph{map} and \emph{reduce}) on multi-dimensional arrays, which
+automatically tiles and distributes the arrays in a way that minimizes the
+communication cost between nodes in cluster environments. In contrast to
+our work, Spartan
+operates on a tiled representation for distributed CPU computation and does attempt to optimize
+performance on individual compute units.
+
+%\begin{itemize}
+%\item Tiling hyperplane method\cite{bondhugula08}
+%\item Programming for Parallelism and Locality with Hierarchically Tiled Arrays \cite{bikshandi}
+%\item Parameterized tiled loops for free\cite{renga07}
+%\item Analytical bounds for optimal tile size selection\cite{shirako12}
+%\item Tiling parallel patterns thesis
+%\end{itemize}
+
+%\textbf{Static modeling}
+%\begin{itemize}
+%\item Aladdin \cite{shao14}
+%\end{itemize}
+
+\paragraph{Hardware from high-level languages}
+Generating hardware from high-level languages has been widely studied for
+decades.  CHiMPS~\cite{chimps} generates hardware from ANSI C code by
+mapping each C language construct in a data-flow graph to an HDL block.
+Kiwi~\cite{kiwi} translates a set of C\# parallel constructs (e.g.,
+\emph{event}, \emph{monitor}, and \emph{lock}) to corresponding hardware units.
+Bluespec~\cite{bluespec} generates hardware from purely functional descriptions
+based on Haskell.  Chisel~\cite{chisel} is an embedded language in Scala
+for hardware generation.  AutoPilot~\cite{autopilot} is a commercial HLS
+tool that generates hardware from C/C++/SystemC languages.  Despite their
+success in raising the level of abstraction compared to hardware description
+languages, programmers are still required to write programs at a low-level and
+express how computations are pipelined and parallelized. Our work
+abstracts away the implementation details from programmers by using high-level
+parallel patterns, and applies compiler transformations to
+automatically pipeline and parallelize operations and exploit on-chip memory
+for locality.
+
+Existing hardware synthesis tools are limited in their
+ability to automatically infer and generate coarse-grained pipelines. A traditional
+software pipelining approach is typically used on innermost loop bodies consisting
+only of primitive operations. Optimizations like \emph{unroll-and-jam}, and \emph{unroll-and-squash}~\cite{unrollSquash}
+also attempt to exploit pipelined parallelism, but target outer parallel loops
+with inner sequential loops. To pipeline imperfectly nested loops, some
+commercial high-level synthesis tools like Vivado~\cite{vivadohls} unroll all inner loops and then employ traditional
+software pipelining. Not only does this approach generate needlessly large designs for large benchmarks,
+it also suffers from long compilation times due to the complexity in scheduling a large number of unrolled instructions.
+More recent works like ElasticFlow~\cite{elasticFlow} and CGPA~\cite{cgpa} generate coarse-grained
+pipelines using FIFOs in between stages for communication. However, they handle only a restricted form of data access
+patterns and a restricted number of nesting levels. Our metapipelining technique is more general than previous approaches because:
+(i) metapipeline stages are decoupled using double buffers, therefore not restricting data access patterns, (ii) metapipelines
+are easily composed and nested to any number of levels, and (iii) metapipelines can handle
+dynamic rate mismatches as they use asynchronous handshaking for inter-stage synchronization, thereby obviating the need
+to calculate static initiation interval as well as knowing loop trip counts ahead of time.
+
+
+Recent work has explored using polyhedral analysis with HLS to optimize for data
+locality on FPGAs~\cite{pouchet13fpga}.  Using polyhedral analysis, the compiler
+is able to promote memory references to on-chip memory and parallelize
+independent loop iterations with more hardware units.  However, the compiler is
+not able to analyze loops that include non-affine accesses, limiting the
+coverage of applications that can be generated for hardware. Our work can
+handle parallel patterns with non-affine accesses by inferring required
+hardware blocks (e.g., FIFOs and CAMs) for non-affine accesses, while
+aggressively using on-chip memory for affine parts.
+
+As high-level parallel patterns become increasingly popular to overcome the
+shortcomings of C based languages, researchers have recently studied generating
+hardware from functional parallel patterns.  Lime~\cite{auerbach10lime}
+embeds high-level computational patterns (e.g., \emph{map}, \emph{reduce}, \emph{split}, and \emph{join}) in
+Java and automatically targets CPUs, GPUs, and FPGAs without modifying the
+code.  Our compiler manages a broader set of parallel patterns (e.g., \emph{groupBy})
+and applies transformations even when patterns are nested,
+which is common in a large number of real-world applications.  Recent work has
+explored targeting nested parallel patterns to
+FPGAs~\cite{george14fpl}. By exploiting the access patterns of nested patterns
+to store sequential memory accesses to on-chip memory and parallelizing the
+computation with strip-mining, the compiler can generate hardware that
+efficiently utilizes memory bandwidth.  However, the compiler does not
+automatically tile patterns for data locality or implement metapipelines
+for nested parallel patterns, which we show are essential components for generating efficient hardware. Overall, our work is the first to show a complete method for
+automatically tiling parallel patterns to improve locality for individual compute units and a process
+for inferring hardware metapipelines from nested parallel patterns.
+
+% We conclude with a qualitative comparison of Spatial to related work, drawing from the criteria in Section~\ref{background}.
+
+%\gist{Here is what we believe are requirements of a good tool}
+A good FPGA design tool should have the following features:
+\begin{itemize}
+  \item \emph{Representation}: The tool must internally represent hardware using a general and parameterizable
+    representation. This representation must preserve information regarding data locality,
+    memory access pattern and parallelism in the input at all levels of nesting.
+    Such a representation must be target-agnostic and should be targetable from high-level
+    language constructs.
+  \item \emph{Estimation}: The tool must quickly analyze a design in the above representation
+    and estimate metrics such as cycle counts and FPGA resource requirements for a target FPGA.
+  \item \emph{DSE}: The tool must be able to leverage the estimators to prune the large design search space,
+    walk the space of designs, and find the Pareto-optimal surface.
+  \item \emph{Generation}: The tool must be able to automatically generate hardware which can then be
+    synthesized and run on the target FPGA. Without this feature, hardware would typically
+    be generated using separate toolchains for estimation and generation, which makes
+    accurate estimation much harder.
+\end{itemize}
+
+Previous work on generating FPGA accelerators has focused on various aspects of the points
+mentioned above. Here we provide an overview of this work.
+
+High-level synthesis (HLS) tools such as LegUp~\cite{legup-tecs} and Vivado HLS~\cite{vivadohls} (previously AutoPilot)~\cite{cong11hls}
+synthesize hardware from C. These tools provide estimates of the cycle count, area and power consumption
+along with hardware generation. However, imperative design descriptions place greater burden on
+the compiler to discover parallelism, pipeline structure and memory access patterns.
+The absence of explicit parallelism often leads to conservative compiler analyses
+producing sub-optimal designs. While some tools allow users to provide compiler
+hints in the form of directives or pragmas in the source code, this approach
+fails to capture key points in the design space.
+\begin{figure}[ht]
+  \begin{lstlisting}[mathescape=true, numbers=none, language=C]
+L1: for (int i=0; i<R; i++) {
+  #pragma HLS PIPELINE II=1
+  L11: for (int j=0; j<C; j++) {
+    sub[j] = y[i] ? x[i][j]-mu0[j] : x[i][j]-mu1[j];
+  }
+  L121: for (int j1=0; j1<C; j1++) {
+    L122: for (int j2=0; j2<C; j2++) {
+      sigma[j1][j2] += sub[j1]*sub[j2];
+  }
+}
+  \end{lstlisting}
+  \caption{GDA for high-level synthesis.}
+  \label{fig:gda-hls}
+\end{figure}
+For example, consider Figure~\ref{fig:gda-hls} which represents the gaussian discriminant analysis (GDA)
+kernel. All loops in this kernel are parallel loops. One set of valid design points would be to implement $L1$
+as a coarse-grained pipeline with $L11$ and $L121$ as its stages. Commercial HLS tools support
+ limited coarse-grained pipelining, but with serveral restrictions. For example,
+the \emph{DATAFLOW} directive in Vivado HLS enables users to describe coarse-grained pipelines.
+However, the directive does not support arbitrarily nested coarse-grained pipelines,
+multiple producers and consumers between stages, or coarse-grain pipelining within a finite loop scope~\cite{vivadohls_ug}, as required in the outer loop in Figure~\ref{fig:gda-hls}.
+%Such coarse-grained pipelining constructs are unfortunately not supported in most commercial
+%HLS tools, leaving these design points unexplored.
+%An attempt to pipeline $L1$ would create a large design with a deep pipeline where both $L11$ and $L121$
+%are completely unrolled. % \todo{add some numbers}.
+%This is a different design point than creating a coarse-grained pipeline.
+In addition, compile times for HLS can be long for large designs due to the complications that
+arise during scheduling. % \todo{add some numbers}.
+Previous studies~\cite{Aladdin} point out other similar issues.
+Such limitations restrict the capability of HLS tools to explore more complex design spaces.
+
+Pouchet et al.~\cite{pouchet13fpga}
+explore combining HLS with polyhedral analysis to optimize input designs for locality
+and use estimates from HLS tools to drive design space exploration. While this captures a larger design
+space than previous work by including tile sizes, this approach is limited to the capabilities
+of the HLS tools and to benchmarks that have strictly affine data accesses. This paper improves
+upon previous work by modeling tiling
+parameters in addition to other design points like coarse-grained pipelining of imperfectly nested loops
+which are not supported by HLS tools, as well as data-dependent accesses which are not supported by polyhedral analysis.
+Chen et al.~\cite{cong_powerdse} describe a simultaneous resource allocation and binding algorithm
+and perform design space exploration using a high-level power estimator. They characterize area
+usage of primitives and fit linear models to derive estimation
+functions. However, this study does not consider higher level design parameters or nested
+parallelism as part of the design space. We perform characterization of primitive
+operations as well as other coarse-grained templates, which enables us to estimate resource usage for
+much more complex accelerators.
+CMOST~\cite{cong_cmost} is a C-to-FPGA framework that uses task-level modeling
+to exploit multi-level parallelism. While CMOST uses simple analytical models, this paper uses a mixture of
+analytical and machine learning models that enables much more fine-grained and accurate estimation of FPGA resource utilization.
+
+Aladdin\cite{Aladdin} is a pre-RTL estimation tool for ASIC accelerator design.
+Aladdin uses a dynamic data dependence graph (DDDG) as input and estimates the latency, area, and power
+for a variety of designs. However, using a DDDG limits the tool's ability to discover nested parallelism
+and infer coarse-grained pipeline structures that require double buffering, especially with complex
+memory accesses in patterns like \emph{filters} or \emph{groupBy}s. Also, Aladdin is focused on ASIC designs
+while our work focuses on FPGA accelerators which have a different set of challenges, as outlined above.
+
+Other related work~\cite{Deng,Bilavarn,MatchEst,Enzler,Bjureus} explore various ideas from analytical to empirical
+models for estimating latency and area of designs in high-level languages. However, these approaches do not
+consider complex applications with nested parallelism. Also, previous work either ignores memory or has a relatively
+simple model for memory. This paper handles both on-chip and off-chip memory accesses
+with varying, data-dependent memory access patterns.
+
+
+\paragraph{HDLs}
+Hardware description languages like Verilog and VHDL are designed for arbitrary circuit description. In order to achieve maximum generality, they require users to explicitly manage timing, control signals, and local memories. Loops are expressed by state machines in flattened RTL. 
+One exception to this is Bluespec SystemVerilog \cite{bluespec}, which supports state machine inference from nested while loops.
+Recent advancements in HDLs have largely been aimed at meta-programming improvements and increasing the size of hardware module libraries.
+Languages like Chisel~\cite{chisel}, MyHDL~\cite{myhdl} and VeriScala~\cite{veriscala} make procedural generation of circuits simpler by embedding their HDL in a software language (e.g. Scala or Python). Similarly, Genesis2~\cite{genesis2} adds Perl scripting support to SystemVerilog to help drive procedural generation. While these improvements allow for more powerful meta-programming compared to Verilog \texttt{\small{generate}} statements, users still write programs at a timed circuit level.
+%For application accelerators, such a low level of abstraction is often too tedious.
+
+
+\paragraph{Lime}
+Lime is a Java-based programming model and runtime from IBM which aims to provide a single unified language to program heterogeneous architectures. Lime natively supports custom bit precisions and includes collection operations, with parallelism in such operations inferred by the compiler. Coarse-grained pipeline and data parallelism are expressed through ``tasks''. Coarse-grained streaming computation graphs can be constructed using built-in constructs like \texttt{\small{connect}}, \texttt{\small{split}}, and \texttt{\small{join}}. The Lime runtime system handles buffering, partitioning, and scheduling of stream graphs. However, coarse-grained pipelines which deviate from the streaming model are not supported, and the programmer has to use a low-level messaging API to handle coarse-grained graphs with feedback loops. Additionally, the compiler does not perform automatic design tuning. Finally, the compiler's ability to instantiate banked and buffered memories is unclear as details on banking multi-dimensional data structures for arbitrary access patterns are not specified. 
+
+
+\paragraph{HLS}
+High-level synthesis tools such as LegUp~\cite{legup}, Vivado HLS~\cite{vivadohls}, Intel's FPGA SDK for OpenCL~\cite{opencl_sdk}, and SDAccel~\cite{sdaccel} allow users to write FPGA designs in C/C++ and OpenCL.
+Using these tools, applications can be expressed at a high level, in terms of arrays and untimed, nested loops. 
+However, while inner loop pipelining, unrolling, and memory banking and buffering are done by the compiler, they generally require explicit user pragmas.
+While previous work has used polyhedral tools to automate banking decisions for affine accesses within a single loop nest~\cite{Wang_banking}, 
+it does not address non-affine cases or cases where accesses to the same memory occur in multiple loop nests.
+While pragmas like Vivado HLS's \emph{DATAFLOW} enable limited support for pipelining nested loops, pipelining at arbitrary loop nest levels is not yet supported~\cite{vivado_userguide}.
+Tools like Aladdin~\cite{Aladdin} have also been created to help automate the process of tuning the pragmas in HLS programs, but designs in HLS still require manual hardware optimization~\cite{nane2016survey}.
+
+%More importantly, users optimizing HLS describe their program in terms of arrays with pragmas. 
+%While these are software constructs, optimizing hardware accelerators in HLS tools is a 
+%Numerous issues, including memory aliasing, and low-level software implementation applications. 
+%While most HLS tools primarily serve as IP core generators, but SDAccel \cite{sdaccel} is a systems-level solution. 
+%Pragmas allow information to be added back to the compiler, but not in a sound way.  }
+
+\paragraph{MaxJ}
+MaxJ is a proprietary language created by Maxeler which allows users to express dataflow algorithms in Java libraries, emphasizing  
+timing at the level of ``ticks`` of valid streaming elements rather than cycles. ~\cite{maxeler}. 
+Users must fall back to flattened, HDL-like syntax for state machines when writing nested loops.
+Memories are inferred based on relative stream offsets, which, while convenient for stream processing, 
+hides hardware implementation details from the user which could otherwise help drive optimization.
+Additionally, MaxJ has limited portability, as it currently can only be used to target supported Maxeler FPGA platforms. 
+
+\paragraph{Image Processing DSLs}
+Recently proposed image processing DSLs provide high-level specifications for targeting various
+accelerator platforms, including GPUs and FPGAs.%~\cite{hegarty2014darkroom, membarth2016hipa, hegarty2016rigel, chugh2016dsl}.
+The narrow domain allows these DSLs to offer more concise abstractions for specifying stencil operations. 
+%Halide~\cite{pldi13halide}, for example, uses a declarative programming model which 
+%entirely hides the loop structure of stencils from the programmer.
+When targeting accelerators, these languages usually rely on source-to-source translation. 
+$HIPA^{CC}$~\cite{membarth2016hipa}, for example, uses a
+source-to-source compiler from a C-like front-end to generate CUDA, OpenCL, and Renderscript for
+targeting GPUs. 
+Recent work on Halide~\cite{pldi13halide} has demonstrated targeting heterogeneous systems, including the Xilinx Zynq's FPGA and ARM cores, by generating intermediate C++ and Vivado HLS~\cite{halidefpga}.
+Rigel~\cite{hegarty2016rigel} and Darkroom~\cite{hegarty2014darkroom} generate Verilog, 
+and PolyMage~\cite{chugh2016dsl} generates OpenMP and C++ for high-level synthesis. 
+Rigel and Darkroom support generation of specialized memory structures on FPGAs, such as line buffers, in order to capture
+reuse. $HIPA^{CC}$ can infer memory hierarchy on GPUs from a fix set of access patterns. 
+These DSLs capture parallelism within a given stencil, typically across image channels 
+and across the image processing pipeline.  
+
+Compared to image processing DSLs, Spatial is more general and provides a 
+lower level of abstraction. Spatial can express pipelining and unrolling for arbitrary loop hierarchies and explicitly exposes the memory hierarchy while automatically banking, buffering, and duplicating structures for arbitrary
+access patterns. These features, along with Spatial's design tuning
+capabilities, make Spatial a natural fit as an optimizing backend target for image processing DSLs.
+
+
+% Compared to image processing DSLs, Spatial is
+% more general but at a lower level of abstraction. Spatial uses a mix of imperative and functional specifications for stencil operations, 
+% but is able to handle pipelining and unrolling for arbitrary loop hierarchies.
+% Spatial requires explicit specification of the memory hierarchy, but is able to automatically bank, buffer, and duplicate for arbitrary access patterns.
+% These features, along with Spatial's design space exploration capabilities, make Spatial a natural fit as an optimizing backend target for 
+% image processing DSLs.

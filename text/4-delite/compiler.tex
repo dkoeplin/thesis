@@ -1,0 +1,160 @@
+\section{Pattern Transformations}
+\label{transformations}
+
+One of the key challenges of generating efficient custom architectures from high level languages is in coping with arbitrarily large data structures. Since main memory accesses
+are expensive and area is limited, our goal is to store a working set in the FPGA's local memory for as long as possible. Ideally, we also want
+to hide memory transfer latencies by overlapping communication with computation using prefetching hardware blocks.
+To this end, in this section we describe a method for automatically tiling parallel patterns to improve program locality and data reuse.
+Like classic loop tiling, our pattern tiling method is composed of two transformations: strip mining and interchange.
+We assume here that our input is a PPL representation of a program and that well known target-agnostic transformations like fusion, code motion, and struct unwrapping have already been run.
+
+%Strip mining sequential, imperative loops is fairly straightforward.
+%Due to the additional information inherent in parallel patterns, strip mining
+\paragraph{Strip mining} %We first examine how parallel patterns can be strip mined.
+%Simple imperative \emph{for} loops are strip mined using a single transformation rule: split the loop's domain to create a pair of nested \emph{for} loops.
+
+%, and describes how tiles of the inner pattern should be combined into a
+%representation equivalent to that created by the untiled pattern.
+%The inner pattern is a transformed version of the original pattern which .
+%In general, transformation rules on parallel patterns must preserve access pattern and parallelism information.
+%In our intermediate representation, this necessitates that the strip mining rules  %outer loop created by strip mining a parallel pattern must itself be a parallel pattern.
+%generate a set of perfectly nested parallel patterns.
+The strip mining algorithm is defined here using two passes over the IR.
+The first pass partitions each pattern's iteration domain \emph{d} into tiles of size \emph{b} by breaking the pattern into a pair of perfectly nested patterns.
+The outer pattern operates over the strided index domain, expressed here as \emph{d/b}, while the inner pattern operates on a tile of size \emph{b}.
+For the sake of brevity this notation ignores the case where \emph{b} does not perfectly divide \emph{d}.
+This case is trivially solved with the addition of \emph{min} checks on the domain of the inner loop.
+Table~\ref{table:stripmining} gives an overview of the rules used by transformer (denoted \emph{T}) to strip mine parallel patterns.
+In addition to splitting up the domain, patterns are transformed by recursively strip mining all functions within that pattern.
+Map is strip mined by reducing its domain and range and nesting it within a MultiFold. Note that the strided MultiFold writes
+to each memory location only once. In this case we indicate the MultiFold's combination function as unused with an underscore.
+As defined in Figure~\ref{fig:ppl-syntax}, the MultiFold, GroupByFold, and FlatMap patterns have the property that a perfectly nested form of a single instance of one of these
+patterns is equivalent to a single ``flattened'' form of that same pattern. This property allows these patterns to be strip mined by
+breaking them up into a set of perfectly nested patterns of the same type as the original pattern.
+
+The second strip mining pass converts array slices and accesses with statically predictable access patterns into slices and accesses of larger, explicitly defined
+array memory tiles. We define tiles which have a size statically known to fit on the FPGA using array copies.
+Copies generated during strip mining can then be used to infer buffers during hardware generation.
+%These buffers allow better usage of burst reads and writes from main memory and enable overlapping of compututation and communication using hardware prefetching.
+Array tiles which have overlap, such as those generated from sliding windows in convolution, are marked with metadata in the IR as having some reuse factor.
+Array copies with reuse have generation rules which minimize the number of redundant reads to main memory when possible.
+
+\input{figs/stripexamples}
+
+\input{figs/interchange}
+
+Table~\ref{table:stripmine-examples} demonstrates how our rules can be used to strip mine a set of simple data parallel operations.
+We use the \emph{copy} infix function on arrays to designate array copies in these examples, using similar syntax as array \emph{slice}.
+We assume in these examples that common subexpression elimination (CSE) and code motion transformation passes have been run after strip mining to eliminate duplicate copies and to
+move array tiles out of the innermost patterns. In these examples, strip mining creates tiled copies of input collections that
+we can later directly use to infer read buffers.
+
+% \begin{table*}[t]\small\centering
+% \begin{tabular}{@{}lll@{}}
+% \toprule
+% {\bf Nested Pattern }    & { }  & {\bf Interchanged Patterns} \\ \midrule
+% {\begin{lstlisting}[mathescape=true,numbers=none]
+% Map(d$_0$){i =>
+%   MultiFold(d$_1$/b)(1)(z)(f)(c)
+% }
+% \end{lstlisting}
+% } & \texttt{=>} &
+% {\begin{lstlisting}[mathescape=true,numbers=none]
+% MultiFold(d$_1$/b)(1)(Map(d$_0$)(z))(
+%   (0, acc => Map(d$_0$){i => c(acc(i), f._2) })
+% ){(a,b) => Map(d$_0$){i => c(a(i), b(i)) }}
+% \end{lstlisting}
+% } \\ \midrule
+% {\begin{lstlisting}[mathescape=true,numbers=none]
+% MultiFold(d$_0$)(d$_1$)(z)(
+%   x = MultiFold(d$_1$/b)(d$_1$)(zeros(d$_1$))(f)(_)
+%   (0, acc => MultiFold(d$_1$/b)(d$_1$)(zeros(d$_1$))(c(acc,x))(_))
+% ){(a,b) =>
+%   MultiFold(d$_1$/b)(d$_1$)(zeros(d$_1$))(c(a,b))(_)
+% }
+% \end{lstlisting}
+% } & \texttt{=>} &
+% {\begin{lstlisting}[mathescape=true,numbers=none]
+% MultiFold(d$_1$/b)(d$_1$)(zeros(d$_1$))(
+%   (0, acc => MultiFold(d$_0$)(1)(z)(f)(c) )
+% )(_)
+% \end{lstlisting}
+% } \\ \bottomrule
+% \end{tabular}
+% \caption{Interchange transformation rules for pattern tiling.}
+% \label{table:interchange}
+% \end{table*}
+
+
+
+\paragraph{Pattern interchange}
+Given an intermediate representation with strip mined nested parallel patterns, we now need to interchange patterns to increase the reuse
+of newly created data tiles. This can be achieved by moving strided patterns out of unstrided patterns. However, as with imperative loops,
+it is not sound to arbitrarily change the order of nested parallel patterns.
+We use two rules for pattern interchange adapted from a previously established \emph{Collect}-\emph{Reduce} reordering rule for computation on clusters~\cite{brown16clusters}.
+These rules both match on the special case of MultiFold where every iteration updates the entire accumulator, which we refer to here as a \emph{fold}.
+The first interchange rule defines how to move a scalar, strided \emph{fold} out of an unstrided Map, transforming the nested loop into a strided \emph{fold} of a Map.
+Note that this also changes the combination function of the \emph{fold} into a Map.
+The second rule is the inverse of the first, allowing us to reorder a strided MultiFold with no reduction function (i.e. the outer pattern of a tiled Map)
+out of an unstrided \emph{fold}. This creates a strided MultiFold of a scalar \emph{fold}. We apply these two rules whenever possible to increase the reuse
+of tiled inputs.
+%The first rule defines how to reorder a Map out of
+
+%ur pattern interchange rules are defined only on specific cases of perfectly nested patterns. These rules are given in Table~\ref{table:interchange}.
+%Our rules define how to move
+%a strided Fold out of an unstrided Map, creating a
+%and a strided Map out of an unstrided Fold.
+
+
+Imperfectly nested parallel patterns commonly occur either due to the way the original user program was structured or
+as a result of aggressive vertical fusion run prior to tiling.
+Interchange on imperfectly nested patterns requires splitting patterns into perfectly nested sections. However, splitting and reordering trades
+temporal locality of intermediate values for increased reuse of data tiles. In hardware, this can involve creating more main memory
+reads or larger on-chip buffers for intermediate results so that less reads need to be done for input and output data. This tradeoff between memory reads and
+increased buffer usage requires more complex cost modeling.
+We use a simple heuristic to determine whether to split fused loops: we split and interchange patterns only when
+the intermediate result created after splitting and interchanging is statically known to fit on the FPGA. This handles the simple case
+where the FPGA has unused on-chip buffers and allocating more on-chip memory guarantees a decrease in the number of main memory reads.
+Future work will examine ways to statically model the tradeoff between main memory accesses and local buffers near 100\% on-chip memory utilization.
+
+
+Table~\ref{table:interchange-examples} shows a simple example of the application of our pattern interchange rules on matrix multiplication.
+We assume here that code motion has been run again after pattern interchange has completed.
+In matrix multiplication, we interchange the perfectly nested strided MultiFold and the unstrided Map.
+This ordering increases the reuse of the copied tile of matrix \emph{y} and changes the scalar reduction into a tile-wise reduction.
+Note that the partial result calculation and the inner reduction can now be vertically fused.
+
+
+
+\begin{figure*}\small\centering
+%\begin{minipage}[b]{.4\textwidth}
+\input{figs/tilingKmeans}
+%\end{minipage}
+%\vspace{-0.1in}
+%\centering\includegraphics[width=2.2in]{figs/tiledKmeans.pdf}
+\caption{Full tiling example for $k$-means clustering, starting from the fused representation in Figure \ref{fig:kmeans-fused}, using tile sizes of \emph{b$_0$} and \emph{b$_1$} for the number of points $n$ and the number of clusters $k$. The number of features $d$ is not tiled in this example.}
+\label{fig:kmeans-example}
+\end{figure*}
+
+
+\paragraph{Discussion}
+The rules we outline here for automatic tiling of parallel patterns are target-agnostic. However, tile copies should only be made explicit
+for devices with scratchpad memory. Architectures with hierarchical memory systems effectively maintain views of subsections of memory
+automatically through caching, making explicit copies on these architectures a waste of both compute cycles and memory.
+
+%We currently only support tiling of simple affine access and slicing patterns, where each index is either constant or of the form \emph{i + c},
+%where \emph{i} is some parallel pattern index and \emph{c} is loop invariant. While this is only a subset of all affine accesses,
+%these accesses are extremely common access pattern in the data analytics domain.
+We currently require the user to explicitly specify tile sizes for all dimensions which require tiling. In future work, tile sizes for all pattern
+dimensions will instead be determined by the compiler through automated tile size selection using modeling and design space exploration.
+
+\paragraph{Example} We conclude this section with a complete example of tiling the $k$-means clustering algorithm, starting from the fused representation shown in Figure~\ref{fig:kmeans-fused}. We assume here that we wish
+to tile the number of input points, \emph{n}, with tile size \emph{b$_0$} and the number of clusters, \emph{k}, with tile size \emph{b$_1$} but not the number of dimensions, \emph{d}. This is representative of machine learning
+classification problems where the number of input points and number of labels is large, but the number of features for each point is relatively small.
+
+Figure~\ref{fig:kmeans-example} gives a comparison of the $k$-means clustering algorithm after strip mining and after pattern interchange. During strip mining, we create
+tiles for both the \emph{points} and \emph{centroids} arrays, which helps us to take advantage of main memory burst reads. However, in the strip mined version, we still fully
+calculate the closest centroid for each point. This requires the entirety of \emph{centroids} to be read for each point. We increase the reuse of each tile of \emph{centroids} by first splitting
+the calculation of the closest centroid label from the MultiFold (Figure~\ref{fig:kmeans-example}a. line~5). The iteration over the centroids tile is then perfectly nested within the iteration over the points. Interchanging these two iterations allows us to reuse the centroids tile across points, thus decreasing the total number of main memory reads for this array by a factor of \emph{b$_0$}. This decrease comes
+at the expense of changing the intermediate (distance, label) pair for a single point to a set of intermediate pairs for an entire tile of \emph{points}. Since the created intermediate result
+has size 2\emph{b$_0$}, we statically determine that this is an advantageous tradeoff and use the split and interchanged form of the algorithm.
