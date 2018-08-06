@@ -5,7 +5,7 @@ FIGS = $(wildcard figs/*.pdf figs/*.png graphs/*.pdf graphs/*.png)
 
 .PHONY: all export clean lunch
 
-$(PAPER).pdf: $(TEX) $(BIB) $(FIGS) jpaper.cls
+$(PAPER).pdf: $(TEX) $(BIB) $(FIGS)
 	echo $(FIGS)
 	pdflatex $(PAPER)
 	bibtex $(PAPER)
