@@ -10,8 +10,8 @@ difficult to target directly from higher level languages. High level synthesis
 hardware abstractions which make even automated performance optimizations
 difficult.
 
-As demand for customized acclerators has increased, there has also been growing
-demand by software engineers and domain experts to move towards domain-specific
+As demand for customized accelerators has grown, so too has the
+demand by software engineers and domain experts for domain-specific
 languages (DSLs) which provide higher levels of abstraction and hence improved
 programmer productivity.
 Unfortunately, domain-specific methods for generating accelerators currently
@@ -28,7 +28,7 @@ dedicated to representing parameterized accelerator designs
 targeting reconfigurable architectures.
 Starting from a common intermediate
 representation for high-level DSLs based on parallel patterns, we first describe
-the cross-kernel optimizations the system performs and the method it uses to
+the cross-kernel optimizations the system performs and the methods which used to
 lower the entire application graph into a parameterized design in the
 intermediate hardware abstraction.
 We then describe our implementation of
@@ -36,10 +36,9 @@ this intermediate abstraction, a language and compiler called Spatial.
 We discuss some of the compiler optimizations Spatial enables,
 including rapid design parameter tuning, pipeline scheduling, and
 memory partitioning.
-\todo{The system proposed in this work can compile a
-high-level program in a domain-specific language into an optimized,
-synthesizable hardware design for a
-given FPGA target with host-side runtime administration.}
+The end result is a compiler stack which can take as input a high-level program in a domain-specific
+language and translate it into an optimized, synthesizable hardware design coupled with
+runtime administration code for the host CPU.
 
 %
 % Acceleration in the form of customized datapaths offer large
