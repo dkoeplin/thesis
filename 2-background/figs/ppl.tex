@@ -1,0 +1,249 @@
+\begin{figure*}
+\centering
+
+%%%%%%%%% ----- Map ------- %%%%%
+\newsavebox{\Map}
+\begin{lrbox}{\Map}
+\begin{lstlisting}[language=PPLTable]
+Map(d+){m}: V$_D$
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\MapHLL}
+\begin{lrbox}{\MapHLL}
+\begin{lstlisting}[language=PPLTable]
+// Vector of size s multiplied by 2
+vector * 2
+// Addition of two size s vectors
+vectorA + vectorB
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\MapPPL}
+\begin{lrbox}{\MapPPL}
+\begin{lstlisting}[language=PPLTable]
+map(s){i => vector(i) * 2 }
+
+map(s){i => vectorA(i) + vectorB(i) }
+\end{lstlisting}
+\end{lrbox}
+
+%%%%%%%%% ----- MultiFold ------- %%%%%
+\newsavebox{\MultiFold}
+\begin{lrbox}{\MultiFold}
+\begin{lstlisting}[language=PPLTable]
+MultiFold(d+)(r)(z){f}{c}: V$_R$
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\MultiFoldHLL}
+\begin{lrbox}{\MultiFoldHLL}
+\begin{lstlisting}[language=PPLTable]
+// Reduction of a vector of s elements
+vector.product
+
+
+// Rum summation in an s $\times$ t matrix
+x.mapRows{row => row.sum }
+
+
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\MultiFoldPPL}
+\begin{lrbox}{\MultiFoldPPL}
+\begin{lstlisting}[language=PPLTable]
+multiFold(s)(1)(1){ i =>
+  (0, acc => acc + x(i))
+}{ (a,b) => a + b }
+
+multiFold(s,t)(r)(zeros(s)){ (i,j) =>
+  (i, acc => acc + x(i,j) )
+}{ (a,b) => map(s){ i => a(i) + b(i) } }
+\end{lstlisting}
+\end{lrbox}
+
+%%%%%%%%% ----- FlatMap ------- %%%%%
+\newsavebox{\FlatMap}
+\begin{lrbox}{\FlatMap}
+\begin{lstlisting}[language=PPLTable]
+FlatMap(d){n}: V$_1$
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\FlatMapHLL}
+\begin{lrbox}{\FlatMapHLL}
+\begin{lstlisting}[language=PPLTable]
+// Filter positives from s elements
+SELECT * FROM vector WHERE elem >= 0
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\FlatMapPPL}
+\begin{lrbox}{\FlatMapPPL}
+\begin{lstlisting}[language=PPLTable]
+flatMap(s){ i =>
+  if (x(i) > 0) [x(i)] else [] }
+\end{lstlisting}
+\end{lrbox}
+
+%%%%%%%%% ----- GroupByFold ------- %%%%%
+\newsavebox{\GroupByFold}
+\begin{lrbox}{\GroupByFold}
+\begin{lstlisting}[language=PPLTable]
+GroupByFold(d)(z){g}{c}: (K,V)$_1$
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\GroupByFoldHLL}
+\begin{lrbox}{\GroupByFoldHLL}
+\begin{lstlisting}[language=PPLTable]
+// Histogram with bin width 10
+x.groupByFold(0){ e =>
+  (e/10, 1)
+}{ (a,b) => a + b }
+\end{lstlisting}
+\end{lrbox}
+
+\newsavebox{\GroupByFoldPPL}
+\begin{lrbox}{\GroupByFoldPPL}
+\begin{lstlisting}[language=PPLTable]
+groupByFold(s)(0){ i =>
+  (x(i)/10, acc => acc + 1)
+}{ (a,b) => a + b }
+\end{lstlisting}
+\end{lrbox}
+
+\fontsize{10}{11}
+\selectfont
+\begin{tabular}{lll}
+{\begin{tabular}{l}
+\multicolumn{1}{l}{\bf{(a) Multi-Dimensional}} \\ \midrule
+%%{\bf Parallel Pattern Definition} & {\bf High Level Language Examples} & {\bf PPL Example} \\ \hline
+\multirow{1}{*}{\usebox{\Map}} \\
+\vspace{-7pt} \\
+Mapping over a $D$-dimensional domain. \\
+\vspace{-8pt} \\
+~~~\argg{d}: $\mathbb{Z}^*_D$ $D$-dimensional domain. \\
+~~~\argg{m}: $\mathbb{Z}^*_D \rightarrow V$ Value function. \\
+\vspace{-9pt} \\
+
+\multirow{1}{*}{\usebox{\MultiFold}} \\
+\vspace{-7pt} \\
+Combination of $R$-dimensional blocks over \\
+a $D$-dimensional iteration domain. \\
+\vspace{-8pt} \\
+~~~\argg{d}: $D$-dimensional domain ($\mathbb{Z}^*$+). \\
+~~~\argg{r}: Output range ($\mathbb{Z}^*_R \rightarrow V$). \\
+~~~\argg{z}: Initial accumulator ($\mathbb{V}_R$). \\
+~~~\argg{f}: (Location, Value) function. ($\mathbb{Z}^*_R \rightarrow (\mathbb{Z}^*_R, V_R \rightarrow V_R)$) \\
+~~~\argg{c}: $(V_R, V_R) \rightarrow V_R$ Combine function. \\
+\vspace{-9pt} \\
+\end{tabular}}
+& {}
+& {
+\begin{tabular}{l}
+\multicolumn{1}{l}{\bf{(b) One Dimensional}} \\ \midrule
+\multirow{1}{*}{\usebox{\FlatMap}} \\
+\vspace{-7pt} \\
+Concatenation of 1-dimensional blocks \\
+over a 1-dimensional iteration domain. \\
+\vspace{-8pt} \\
+~~~\argg{d}: 1-dimensional domain ($\mathbb{Z}^*_0$) \\
+~~~\argg{n}: Multi-value function ($V_D$) \\
+\vspace{-9pt} \\
+
+\multirow{1}{*}{\usebox{\GroupByFold}} \\
+\vspace{-7pt} \\
+Concatenation of 1-dimensional blocks \\
+over a 1-dimensional iteration domain. \\
+\vspace{-8pt} \\
+~~~\argg{d}: 1-dimensional domain ($\mathbb{Z}^*_0$) \\
+~~~\argg{z}:  \\
+~~~\argg{g}:  \\
+~~~\argg{c}:  \\
+\vspace{-9pt} \\
+
+\end{tabular}
+}
+\end{tabular}
+
+%{\usebox{\MapHLL}} &
+%{\usebox{\MapPPL}} \\ \arrayrulecolor[gray]{0.8}\hline
+
+%{\usebox{\MultiFold}} & {\usebox{\MultiFoldHLL}} & {\usebox{\MultiFoldPPL}} \\ \arrayrulecolor[gray]{0.8}\hline
+
+%{textbf{\texttt{One-dimensional}}} & {} & {} \\
+%{\usebox{\FlatMap}} & {\usebox{\FlatMapHLL}} & {\usebox{\FlatMapPPL}} \\ \arrayrulecolor[gray]{0.8}\hline
+%{\usebox{\GroupByFold}} & {\usebox{\GroupByFoldHLL}} & {\usebox{\GroupByFoldPPL}} \\
+%
+% {\begin{tabular*}{0.95\textwidth}{llll}
+% {\bf User-defined Values} & & & \\ \hline
+% {\begin{lstlisting}[language=PPLTable]
+% d : Integer$_D$
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% input domain
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% m : Index$_D$ => V
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% value function
+% \end{lstlisting}} \\
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% r : Integer$_R$
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% output range
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% n : Index => V$_1$
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% multi-value function
+% \end{lstlisting}} \\
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% z : V$_R$
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% init accumulator
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% f : Index$_D$ => (Index$_R$, V$_R$ => V$_R$)
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% (location, value) function
+% \end{lstlisting}} \\
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% c : (V$_R$,V$_R$) => V$_R$
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% combine accumulator
+% \end{lstlisting}} \hspace{51pt} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% g : Index => (K, V => V)$_1$
+% \end{lstlisting}} &
+%
+% {\begin{lstlisting}[numbers=none,mathescape=true]
+% (key, value) function
+% \end{lstlisting}} \\
+% \noalign{\hrule height 1.5pt}
+%\end{tabular}
+
+\caption{\label{fig:ppl-syntax}Definitions and usage examples of supported parallel patterns.}
+\end{figure*}

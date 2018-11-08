@@ -1,7 +1,5 @@
-\section{Area and Runtime Estimation}
+\subsection{Area and Runtime Estimation}
 \label{sec:modeling}
-%\gist{Characterize DHDL templates and construct models estimate area and runtime in terms of cycle count.
-%Estimation must account for effects from low-level tool optimizations. This drives a DSE loop}
 In this section, we describe our modeling methodology. Our models account for the various
 design parameters for each DHDL template, as listed in Table~\ref{t-hwtemplates}, as well as optimizations done by low-level logic
 synthesis tools in order to accurately estimate resource usage.
@@ -53,7 +51,6 @@ units (DSPs), device block RAMs, LUTs, and registers that each template requires
 we split template LUT resource requirements into the number of ``packable'' and ``unpackable'' LUTs required.
 %For templates with documented implementations such as floating point operations \cite{fp-altera}, we gather resource and cycle data in part by summarizing IP core documentation. However, these user manuals typically do not give resource usage breakdowns at the binary function level.
 We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters as given in Table~\ref{t-hwtemplates}.
-%Our model assumes that all primitive multi-cycle nodes (such as multiply) are fully pipelined.
 Using this data, we create analytical models of each DHDL template's resource requirements and cycle counts for
 a predefined fabric clock. The area and cycle count of controller templates are modeled as functions of the latencies of the nodes contained within them.
 The total cycle count for a \emph{MetaPipe}, for example, is modeled using the recursive function
@@ -68,29 +65,6 @@ number and length of memory commands, as well as contention due to competing acc
 %\note{not sure I understand this. Which part is app-independent. Presumably the way to explore the space will dependt on the application. Is this only for the device models? }
 
 Using these models, we run a pair of analysis passes over the application's DHDL intermediate representation to estimate design cycle counts and area requirements.
-
-%\begin{table*}
-%\centering\footnotesize
-%\begin{tabular}{m{1.7cm}c{4.7cm}c{4.7cm}m{4.5cm}}
-%\toprule
-%{\bf Node} & {\bf Cycle Count} & {\bf Area} & {\bf Parameters} \\ \midrule
-%TileLd &  & & \\ \midrule
-%TileSt &  & & \\ \midrule
-%Sequential &  & & \\ \midrule
-%Parallel &
-%  \begin{lstlisting}[mathescape=true, numbers=none, language=DHDL]
-%    Cycles[body] + N * Cycles[accum]
-%  \end{lstlisting}
-%   & Area[body] & \texttt{accum}: accumulation loop for reductions \\ \midrule
-%CoarsePipe & & & \\ \midrule
-%Pipe &  & &  \\ \midrule
-%BRAM & 0 & & \\ \midrule
-%Priority Queue & 0 & & \\ \midrule
-%Reg & 1 & & \\ \bottomrule
-%\end{tabular}
-%\caption{Area and cycle count models for DHDL nodes. Note that \emph{BRAM} and \emph{Priority Queue} have no associated cycle counts %as this is accounted for entirely by \emph{Ld} and \emph{St} templates.}
-%\label{table:benchmarks}
-%\end{table*}
 
 \subsubsection{Cycle Count Estimation}
 In the first analysis pass, we estimate the total runtime of the design on the FPGA.
@@ -148,11 +122,6 @@ compute units with two registers each. This gives us the final estimation for LU
 %We use the Encog machine learning library~\cite{encog} to implement our neural network.
 
 \subsection{Design space exploration}
-%\gist{We explore this list (have a list somewhere) of design points
-%  for each benchmark. Input dataset size is considered during DSE
-%as it impacts the search space. We perform simple optimizations
-%to prune search space to discount invalid combinations and designs
-%which will not fit in the given amount of resources}
 Our design space exploration tool uses the resource and cycle count estimates
 to explore the space of designs described by the parameters in Table~\ref{t-hwtemplates}.
 As we are dealing with large design spaces on the order of millions of points even for small benchmarks,
@@ -162,41 +131,9 @@ we prune invalid and suboptimal points in the search space using a few simple he
   \item Tile sizes considered are divisors of the dimensions of the annotated data size. Similar to parallelization factors, tile sizes with edge cases are usually suboptimal as they increase load and store area and latency with additional indexing logic.
   \item Automatic banking of on-chip memories eliminates the memory banks as an independent variable. This prunes a large set of suboptimal design points where on-chip memory bandwidth requirements do not match the amount of parallelization.
   \item The total size of each local memory is limited to a fixed maximum value.
-  %\item Design points that have larger parameter sizes than a previously estimated point
-  %  are pruned if the previously estimated point does not fit in the given FPGA resources.
 \end{itemize}
 
-These heuristics defines a ``legal'' subspace of the total design space. In our experiments, we randomly generate estimates for up to $75,000$ legal points to give a representative view of the entire design space. We immediately discard illegal points.
-
-% ------------------ ALREADY COMMENTED -------------------------
-%Using the DHDL templates described in the previous section, we estimate total FPGA resource usage and runtime. Our estimates are made using a set of models at the template and design level. While creating these models requires a set of pre-characterization hardware synthesis runs, this characterization is application-independent and need only be run once for a given target device.
-
-%Creating these models requires a set of pre-characterization hardware synthesis runs, but benchmarks used for characterization tend to be much smaller, and hence synthesize faster, than any real application. More importantly, characterization is application-independent and need only be run once for a given target FPGA.
-
-%Template area and cycle models are based on simple, individual characterizations.
-% --------------------------------------------------------------
-
-% ---------------------- ALREADY COMMENTED ------------------------------------
-%\begin{itemize}
-%\item Template area and cycle count based on individual characterization (include table for controllers?)
-%\item ALM packing based on rough estimate
-%\item Simple ASAP schedule estimation for adding delay registers along combinational paths
-%\item Routing for ALMs and regs based on neural network model, as is unavailable ALM model
-%\item Routing BRAMs?
-%\end{itemize}
-% -----------------------------------------------------------
-
-
-
-
-% ---------------------- ALREADY COMMENTED ------------------------------------
-%Characterization and modeling is device-specific but application-independent.
-%Once created, each model can be used across many different applications on the same
-
-
-%Even a relatively small number of parameters can lead to large design spaces. If hardware place and route pass is used for evaluation, each
-%Naively implemen automated design space acceleration of application-specific accelerators is quite time consuming, both because of the size of space and the length of time
-
-%Modern FPGAs include
-
-
+These heuristics defines a ``legal'' subspace of the total design space.
+In our experiments, we randomly generate estimates for up to $75,000$ legal
+points to give a representative view of the entire design space. We immediately
+discard illegal points.

@@ -34,7 +34,7 @@ Hardware description languages (HDLs) like Verilog and VHDL are designed for exp
 placing the burden on the user to solve the complexities of implementing their algorithm in hardware.
 
 \section{Domain-Specific Languages}
-\gist{DSLs are good, but high level - require another layer of abstraction for better performance}
+\todo{DSLs are good, but high level - require another layer of abstraction for better performance}
 
 \section{High Level Synthesis}
 \todo{Not sure about this section heading?}
@@ -128,7 +128,7 @@ The contributions of this work are as follows:
 \section{Outline}
 Chapter~\ref{background} provides background on domain-specific languages and parallel patterns.
 We also formalize the set of parallel patterns we will discuss in this work.
-In chapter~\ref{transformations} we discuss the high level transformations required to lower
+In Chapter~\ref{transformations} we discuss the high level transformations required to lower
 parallel patterns into a form which can be more easily compiled to reconfigurable architectures.
 Chapter~\ref{compiler} then discusses our specifications for an intermediate hardware abstraction.
 We specify the implementation of this abstraction, the language Spatial, and describe the lowering
@@ -138,5 +138,5 @@ Chapter~\ref{argon} describes the Argon compiler framework which both the high l
 built on, and highlights the primary improvements over its predecessor and lessons learned during its development.
 In Chapter~\ref{related}, we discuss related work across the system, including a discussion of
 prior work on automated tiling and high level synthesis languages.
-Finally, we conclude with a summary and discussion of future opportunities for optimization
+Finally, we conclude in Chapter~\ref{conclusion} with a summary and discussion of future opportunities for optimization
 and generalization in targeting FPGAs from DSLs using the compiler stack approach.
