@@ -1,16 +1,16 @@
-PAPER = main
 TEX = $(wildcard *.tex text/*.tex)
 BIB = references.bib
 FIGS = $(wildcard figs/*.pdf figs/*.png graphs/*.pdf graphs/*.png)
 
-DELITE_PAPER = 3-delite/main
+.PHONY: all export clean lunch main back delite
 
-.PHONY: all export clean lunch delite
+all: main
 
-$(PAPER).pdf: $(TEX) $(BIB) $(FIGS)
-	pdflatex $(PAPER)
-	bibtex $(PAPER)
-	pdflatex $(PAPER)
+main: $(TEX) $(BIB) $(FIGS)
+	pdflatex main
+	bibtex main
+	pdflatex main
+	pdflatex main
 
 back: $(wildcard common.tex 2-background/*.tex) $(BIB) $(FIGS)
 	pdflatex 2-background/main

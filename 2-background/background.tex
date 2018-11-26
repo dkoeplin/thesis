@@ -5,11 +5,8 @@
 
 
 \section{Parallel Patterns}
-
-\input{2-background/figs/ppl}
-
 Parallel patterns are becoming a popular programming abstraction for writing
-high level applications that can still be efficiently mapped to hardware
+high level applications that can also be efficiently mapped to hardware
 targets such as multicore~\cite{scala,haskell,delite-tecs14},
 clusters~\cite{mapreduce,zaharia10spark,spartan},
 GPUs~\cite{catanzaro11copperhead,micro14lee},
@@ -17,28 +14,39 @@ and FPGAs~\cite{auerbach10lime,george14fpl}. In addition, they have been shown
 to provide high productivity when implementing applications in a wide variety
 of domains~\cite{ecoop13sujeeth,pldi13halide}.
 
+\input{2-background/figs/ppl-syntax}
+
 In this work, we will focus on the parallel patterns defined in Figure~\ref{fig:ppl-syntax}.
 We refer to this set as the parallel pattern language (PPL).
-The definitions on the left represent the atoms in the intermediate language
-used in our compiler for analysis, optimization, and code generation. The code
-snippets on the right show common examples of how users typically interact with
-these patterns in a functional programming language via collections operations
-and how those examples are represented in PPL. The syntactic structure is
+We will use these patterns to describe the high level
+compiler's intermediate representation (IR) and corresponding rules during analyses and optimizations.
+Patterns are type-parameterized such that the output type of each pattern is a tensor, where each
+element of the tensor is of some type $V$. We currently restrict $V$ to be a scalar value and
+do not allow nested tensors, only multidimensional tensors.
+$D$-dimensional tensor types are denoted as $V^D$, while tuples of $D$ values are
+denoted $V_D$. Note that this means a value of type $\mathbb{Z}_D$ can serve as a $D$-dimensional address
+for a tensor of type $V^D$.
+If no superscript or subscript is specified, the type is a 0-dimensional tensor ($V^0$) or, equivalently, a tuple of one element ($V_1$).
+Both are equivalent to a scalar ($V = V_1 = V^0$).
+
+As shown in Figure~\ref{fig:ppl-syntax}, we separate PPL into two groups based on dimensionality.
+Figure~\ref{fig:ppl-syntax}a. lists the multi-dimensional patterns.
+These patterns have an arbitrary number of dimensions in both their domain and range,
+but the dimensions of the output tensor
+are restricted to a statically known function of the dimensions of the input domain.
+One-dimensional patterns, shown in Figure~\ref{fig:ppl-syntax}b., can output a tensor with a dynamic, data-dependent size.
+All patterns generate output values by applying a function to
+every index in their domain. Each pattern then merges these values into a final
+output in a pattern-specific way.
+
+\input{2-background/figs/ppl-examples}
+
+Figure~\ref{fig:ppl-examples} shows common examples of how users typically interact with
+the patterns in PPL in various high level, domain specific languages
+and how those examples are correspondingly represented in PPL. In some cases, the syntactic structure is
 essentially the same except that the input domain is inferred from the shape of
 the input collection. Using explicit indices in the intermediate language allows
 us to model more user-facing patterns and more input access patterns with fewer internal primitives.
-\emph{Map}, for example,
-
-We separate PPL into two groups. Multidimensional patterns
-have an arbitrary arity domain and range, but are restricted to a range which
-is a fixed function of the domain. One-dimensional patterns can have a dynamic
-output size. All patterns generate output values by applying a function to
-every index in the domain. Each pattern then merges these values into the final
-output in a different way. The output type $V$ can be a scalar or structure of
-scalars. We currently do not allow nested arrays, only multidimensional arrays.
-We denote multidimensional array types as $V_R$, which denotes a tensor of
-element type $V$ and arity $R$. In Figure~\ref{fig:ppl-syntax} subscript $R$
-always represents the arity of the output range, and $D$ the arity of the input domain.
 
 % \begin{figure}\centering
 % \begin{lstlisting}[mathescape=true]
@@ -78,7 +86,29 @@ always represents the arity of the output range, and $D$ the arity of the input 
 % \label{fig:kmeans}
 % \end{figure}
 
-\begin{figure}\centering
+\emph{Map} generates a single element per index, aggregating the results into a fixed-size output collection.
+Note that the value function can close over an arbitrary number of input collections, and therefore this pattern can represent classic parallel operations like \emph{map}, \emph{zip},
+and \emph{zipWithIndex}.
+
+\emph{MultiFold} is a generalization of a \emph{fold} which reduces generated values into a specified region of a (potentially) larger accumulator using an associative combine function.
+The initial value $z$ is required to be an identity element of this function, and must have the same size and shape as the final output.
+The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator. Note that a traditional \emph{fold} is the special case of MultiFold where every generated value is the full size of the accumulator.
+$f$ then converts each index into a function that consumes the specified slice of the current accumulator and returns the new slice. If the pattern's implementation maintains multiple partial accumulators in parallel, the combine function $c$ reduces them into the final result.
+
+\emph{FlatMap} generates an arbitrary number of values per index.
+These values are all concatenated into a flattened output.
+As the output size can only be determined dynamically, we restrict FlatMap to one-dimensional domains so that dynamically growing the output is easily defined.
+Note that this primitive also easily expresses a \emph{filter}.
+
+\emph{GroupByFold} reduces generated values into one of many buckets where the bucket is selected by generating a key along with each value, i.e. it is a fused version of a \emph{groupBy} followed by a \emph{fold} over each bucket.
+The operation is similar to \emph{MultiFold} except that the key-space cannot be determined in advance and so the output size is unknown.
+Therefore we also restrict this operation to one-dimensional domains.
+
+
+
+
+\begin{figure}
+\centering
 \begin{lstlisting}[language=Scala]
 //data to be clustered, size n x d
 val points: Array[Array[Float]] = ...
@@ -145,26 +175,6 @@ newCentroids = map(k,d){ (i,j) =>
 \caption{K-Means clustering represented using the parallel patterns in Figure~\ref{fig:ppl-syntax} after fusion and code motion.}
 \label{fig:kmeans-fused}
 \end{figure}
-
-
-\emph{Map} generates a single element per index, aggregating the results into a fixed-size output collection.
-Note that the value function can close over an arbitrary number of input collections, and therefore this pattern can represent classic parallel operations like \emph{map}, \emph{zip},
-and \emph{zipWithIndex}.
-
-\emph{MultiFold} is a generalization of a \emph{fold} which reduces generated values into a specified region of a (potentially) larger accumulator using an associative combine function.
-The initial value $z$ is required to be an identity element of this function, and must have the same size and shape as the final output.
-The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator. Note that a traditional \emph{fold} is the special case of MultiFold where every generated value is the full size of the accumulator.
-$f$ then converts each index into a function that consumes the specified slice of the current accumulator and returns the new slice. If the pattern's implementation maintains multiple partial accumulators in parallel, the combine function $c$ reduces them into the final result.
-
-\emph{FlatMap} generates an arbitrary number of values per index.
-These values are all concatenated into a flattened output.
-As the output size can only be determined dynamically, we restrict FlatMap to one-dimensional domains so that dynamically growing the output is easily defined.
-Note that this primitive also easily expresses a \emph{filter}.
-
-\emph{GroupByFold} reduces generated values into one of many buckets where the bucket is selected by generating a key along with each value, i.e. it is a fused version of a \emph{groupBy} followed by a \emph{fold} over each bucket.
-The operation is similar to \emph{MultiFold} except that the key-space cannot be determined in advance and so the output size is unknown.
-Therefore we also restrict this operation to one-dimensional domains.
-
 
 \paragraph{Example}
 Now that we have defined the operations, we will use them to implement k-means clustering as an example application.

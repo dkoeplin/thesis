@@ -5,26 +5,7 @@
 \newsavebox{\Map}
 \begin{lrbox}{\Map}
 \begin{lstlisting}[language=PPLTable]
-Map(d+){m}: V$_D$
-\end{lstlisting}
-\end{lrbox}
-
-\newsavebox{\MapHLL}
-\begin{lrbox}{\MapHLL}
-\begin{lstlisting}[language=PPLTable]
-// Vector of size s multiplied by 2
-vector * 2
-// Addition of two size s vectors
-vectorA + vectorB
-\end{lstlisting}
-\end{lrbox}
-
-\newsavebox{\MapPPL}
-\begin{lrbox}{\MapPPL}
-\begin{lstlisting}[language=PPLTable]
-map(s){i => vector(i) * 2 }
-
-map(s){i => vectorA(i) + vectorB(i) }
+Map(d){m}: V$_D$
 \end{lstlisting}
 \end{lrbox}
 
@@ -32,34 +13,7 @@ map(s){i => vectorA(i) + vectorB(i) }
 \newsavebox{\MultiFold}
 \begin{lrbox}{\MultiFold}
 \begin{lstlisting}[language=PPLTable]
-MultiFold(d+)(r)(z){f}{c}: V$_R$
-\end{lstlisting}
-\end{lrbox}
-
-\newsavebox{\MultiFoldHLL}
-\begin{lrbox}{\MultiFoldHLL}
-\begin{lstlisting}[language=PPLTable]
-// Reduction of a vector of s elements
-vector.product
-
-
-// Rum summation in an s $\times$ t matrix
-x.mapRows{row => row.sum }
-
-
-\end{lstlisting}
-\end{lrbox}
-
-\newsavebox{\MultiFoldPPL}
-\begin{lrbox}{\MultiFoldPPL}
-\begin{lstlisting}[language=PPLTable]
-multiFold(s)(1)(1){ i =>
-  (0, acc => acc + x(i))
-}{ (a,b) => a + b }
-
-multiFold(s,t)(r)(zeros(s)){ (i,j) =>
-  (i, acc => acc + x(i,j) )
-}{ (a,b) => map(s){ i => a(i) + b(i) } }
+MultiFold(d)(r)(z){f}{c}: V$_R$
 \end{lstlisting}
 \end{lrbox}
 
@@ -71,21 +25,7 @@ FlatMap(d){n}: V$_1$
 \end{lstlisting}
 \end{lrbox}
 
-\newsavebox{\FlatMapHLL}
-\begin{lrbox}{\FlatMapHLL}
-\begin{lstlisting}[language=PPLTable]
-// Filter positives from s elements
-SELECT * FROM vector WHERE elem >= 0
-\end{lstlisting}
-\end{lrbox}
 
-\newsavebox{\FlatMapPPL}
-\begin{lrbox}{\FlatMapPPL}
-\begin{lstlisting}[language=PPLTable]
-flatMap(s){ i =>
-  if (x(i) > 0) [x(i)] else [] }
-\end{lstlisting}
-\end{lrbox}
 
 %%%%%%%%% ----- GroupByFold ------- %%%%%
 \newsavebox{\GroupByFold}
@@ -95,77 +35,63 @@ GroupByFold(d)(z){g}{c}: (K,V)$_1$
 \end{lstlisting}
 \end{lrbox}
 
-\newsavebox{\GroupByFoldHLL}
-\begin{lrbox}{\GroupByFoldHLL}
-\begin{lstlisting}[language=PPLTable]
-// Histogram with bin width 10
-x.groupByFold(0){ e =>
-  (e/10, 1)
-}{ (a,b) => a + b }
-\end{lstlisting}
-\end{lrbox}
-
-\newsavebox{\GroupByFoldPPL}
-\begin{lrbox}{\GroupByFoldPPL}
-\begin{lstlisting}[language=PPLTable]
-groupByFold(s)(0){ i =>
-  (x(i)/10, acc => acc + 1)
-}{ (a,b) => a + b }
-\end{lstlisting}
-\end{lrbox}
 
 \fontsize{10}{11}
 \selectfont
-\begin{tabular}{lll}
-{\begin{tabular}{l}
-\multicolumn{1}{l}{\bf{(a) Multi-Dimensional}} \\ \midrule
-%%{\bf Parallel Pattern Definition} & {\bf High Level Language Examples} & {\bf PPL Example} \\ \hline
+\begin{tabular}{l}
+\multicolumn{1}{l}{\bf{(a) Multi-Dimensional Patterns}} \\ \midrule
 \multirow{1}{*}{\usebox{\Map}} \\
 \vspace{-7pt} \\
 Mapping over a $D$-dimensional domain. \\
 \vspace{-8pt} \\
-~~~\argg{d}: $\mathbb{Z}^*_D$ $D$-dimensional domain. \\
-~~~\argg{m}: $\mathbb{Z}^*_D \rightarrow V$ Value function. \\
-\vspace{-9pt} \\
-
-\multirow{1}{*}{\usebox{\MultiFold}} \\
-\vspace{-7pt} \\
-Combination of $R$-dimensional blocks over \\
-a $D$-dimensional iteration domain. \\
-\vspace{-8pt} \\
-~~~\argg{d}: $D$-dimensional domain ($\mathbb{Z}^*$+). \\
-~~~\argg{r}: Output range ($\mathbb{Z}^*_R \rightarrow V$). \\
-~~~\argg{z}: Initial accumulator ($\mathbb{V}_R$). \\
-~~~\argg{f}: (Location, Value) function. ($\mathbb{Z}^*_R \rightarrow (\mathbb{Z}^*_R, V_R \rightarrow V_R)$) \\
-~~~\argg{c}: $(V_R, V_R) \rightarrow V_R$ Combine function. \\
-\vspace{-9pt} \\
-\end{tabular}}
-& {}
-& {
-\begin{tabular}{l}
-\multicolumn{1}{l}{\bf{(b) One Dimensional}} \\ \midrule
-\multirow{1}{*}{\usebox{\FlatMap}} \\
-\vspace{-7pt} \\
-Concatenation of 1-dimensional blocks \\
-over a 1-dimensional iteration domain. \\
-\vspace{-8pt} \\
-~~~\argg{d}: 1-dimensional domain ($\mathbb{Z}^*_0$) \\
-~~~\argg{n}: Multi-value function ($V_D$) \\
-\vspace{-9pt} \\
-
-\multirow{1}{*}{\usebox{\GroupByFold}} \\
-\vspace{-7pt} \\
-Concatenation of 1-dimensional blocks \\
-over a 1-dimensional iteration domain. \\
-\vspace{-8pt} \\
-~~~\argg{d}: 1-dimensional domain ($\mathbb{Z}^*_0$) \\
-~~~\argg{z}:  \\
-~~~\argg{g}:  \\
-~~~\argg{c}:  \\
-\vspace{-9pt} \\
-
+{
+\begin{tabular}{lll}
+\argg{d}: & \hspace{-7pt}$D$-dimensional iteration domain. & $\mathbb{Z}^D$ \\
+\argg{m}: & \hspace{-7pt}Value function.   & $\mathbb{Z}_D\rightarrow V$ \\
 \end{tabular}
 }
+\\
+\\
+\multirow{1}{*}{\usebox{\MultiFold}} \\
+\vspace{-7pt} \\
+Combination of $R$-dimensional tensors over a $D$-dimensional iteration domain. \\
+\vspace{-8pt} \\
+{
+\begin{tabular}{lll}
+\argg{d}: & \hspace{-7pt}$D$-dimensional iteration domain. & $\mathbb{Z}^D$ \\
+\argg{r}: & \hspace{-7pt}Output index range.         & $\mathbb{Z}^R$ \\
+\argg{z}: & \hspace{-7pt}Initial accumulator         & $V^R$ \\
+\argg{f}: & \hspace{-7pt}(Offset, Value) function.   & $\mathbb{Z}_D \rightarrow (\mathbb{Z}_R, V^R \rightarrow V^R)$ \\
+\argg{c}: & \hspace{-7pt}Combine function.           & $(V^R, V^R) \rightarrow V^R$ \\
+\end{tabular}
+}
+\\
+\\ \\
+\multicolumn{1}{l}{\bf{(b) One Dimensional Patterns}} \\ \midrule
+\multirow{1}{*}{\usebox{\FlatMap}} \\
+\vspace{-7pt} \\
+Concatenation of 1-dimensional arrays over a 1-dimensional iteration domain. \\
+\vspace{-8pt} \\
+{
+\begin{tabular}{lll}
+\argg{d}: & \hspace{-7pt}1-dimensional iteration domain. & $\mathbb{Z}^1$ \\
+\argg{n}: & \hspace{-7pt}Multi-value function. & $\mathbb{Z} \rightarrow V^1$ \\
+\end{tabular}
+}
+\\
+\\
+\multirow{1}{*}{\usebox{\GroupByFold}} \\
+\vspace{-7pt} \\
+Associative reduction of values over a 1-dimensional domain based on paired key values. \\
+\vspace{-8pt} \\
+{
+\begin{tabular}{lll}
+\argg{d}: & \hspace{-7pt}1-dimensional iteration domain. & $\mathbb{Z}^1$ \\
+\argg{z}: & \hspace{-7pt}Identity value. & $V$ \\
+\argg{g}: & \hspace{-7pt}(Key,Value) function. & $\mathbb{Z} \rightarrow (K,V)$ \\
+\argg{c}: & \hspace{-7pt}Combination function. & $(V,V) \rightarrow V$ \\
+\end{tabular}
+} \\
 \end{tabular}
 
 %{\usebox{\MapHLL}} &
@@ -245,5 +171,5 @@ over a 1-dimensional iteration domain. \\
 % \noalign{\hrule height 1.5pt}
 %\end{tabular}
 
-\caption{\label{fig:ppl-syntax}Definitions and usage examples of supported parallel patterns.}
+\caption{\label{fig:ppl-syntax}Definition of the patterns in the parallel pattern language (PPL). $V^D$ denotes a tensor with $D$ dimensions and elements of type $V$, while $V_D$ denotes a tuple of $D$ elements of type $V$.}
 \end{figure*}
