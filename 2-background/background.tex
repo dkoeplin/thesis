@@ -2,17 +2,56 @@
 \label{background}
 
 \section{Domain-Specific Languages}
+Domain-specific languages (DSLs) are, in general, programming languages which have specialized
+constructs limited to a specific type of computation. A typical goal of
+most domain-specific languages is to improve productivity in a particular domain
+by increasing abstraction at the cost of generality. Unlike general-purpose languages like C and Java,
+the number of operations and types of data structures in a domain-specific language
+are generally limited. The benefit of this is that the language's compiler is
+generally aware of each of these operations and able to specialize and optimize them.
+Some domain-specific languages are standalone, including a full compiler with standard language
+lexing, parsing, and type checking, others are embedded in a host general purpose language,
+levaraging the existing language's compiler infrastructure while also
+adding additional functionality. In this case, the semantics of the embedded language
+define how code written in the host language and DSL interact.
+
+For example, SQL~\cite{sql} is a standalone, declarative
+domain-specific language originally created in 1986 for describing database operations with high level constructs
+for defining operations on tables of data, but little support for other types of operations.
+Compilers for SQL include query-planning optimizations which optimize the order of
+operations based on domain-specific knowledge about each operator.
+Similarly, Halide~\cite{pldi13halide} is an imperative language embedded in C++ specialized for image processing
+and operations on arrays. Halide's syntax and compiler are specialized for linear and stenciled access patterns,
+as these are extremely common in operations on images.
+
+With the recent explosion of academic and industry interest in the machine learning (ML) domain,
+a variety of ML-specific languages have been developed.
+OptiML~\cite{optiml} is a mixed (imperative and functional) paradigm DSL embedded in Scala
+which specializes in data-parallel operations on vectors and matrices.
+Its operator abstractions allow it to automatically parallelize ML applications.
+More recently, TensorFlow ~\cite{tensorflow} and PyTorch ~\cite{pytorch} are
+embedded DSLs in Python for defining machine learning computation graphs based on
+a limited set of operations on multi-dimensional arrays (``tensors'').
+
+In this work, we will focus specifically on domain-specific languages in the domains under
+data analytics, with a focus on image processing and machine learning.
 
 
 \section{Parallel Patterns}
-Parallel patterns are becoming a popular programming abstraction for writing
-high level applications that can also be efficiently mapped to hardware
-targets such as multicore~\cite{scala,haskell,delite-tecs14},
-clusters~\cite{mapreduce,zaharia10spark,spartan},
+
+Parallel patterns like \emph{Map}, \emph{Reduce}, and \emph{GroupBy} are abstractions
+borrowed from the functional programming paradigm
+to capture information like read and write access patterns and data parallelism.
+Due to their high level of abstraction, parallel patterns are becoming
+popular for direct use in high level DSLs for improving productivity.
+More pertinently, they have also been shown to be useful as a common abstraction in compiler
+intermediate representations (IRs) across a wide variety of domains~\cite{ecoop13sujeeth,pldi13halide}.
+The combination of their high level of abstraction and large amount of semantic information
+means that can also be efficiently mapped to a variety of hardware
+targets, including multicore CPUs~\cite{scala,haskell,delite-tecs14},
+compute clusters~\cite{mapreduce,zaharia10spark,spartan},
 GPUs~\cite{catanzaro11copperhead,micro14lee},
-and FPGAs~\cite{auerbach10lime,george14fpl}. In addition, they have been shown
-to provide high productivity when implementing applications in a wide variety
-of domains~\cite{ecoop13sujeeth,pldi13halide}.
+and FPGAs~\cite{auerbach10lime,george14fpl}.
 
 \input{2-background/figs/ppl-syntax}
 
@@ -191,4 +230,4 @@ One of the most important of these optimizations is fusing patterns together, bo
 Figure~\ref{fig:kmeans-fused} shows the structure of $k$-means after it has been lowered into PPL and fusion rules have been applied.
 We have also converted the nested arrays in the Scala example to our multidimensional arrays.
 This translation requires the insertion of \emph{slice} operations in certain locations, which produce a view of a subset of the underlying data.
-In our implementation, we use the Delite compiler framework \cite{delite-tecs14} to stage applications. For the remainder of this paper, we will assume a high-level translation from user code to PPL exists and always start from the parallel pattern representation.
+For the remainder of this work, we will assume a high-level translation from user DSL code to PPL exists and always start from the parallel pattern intermediate representation.
