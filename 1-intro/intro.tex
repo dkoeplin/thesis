@@ -77,7 +77,7 @@ these complexities are solved using a kernel-based approach.
 The DSL compiler performs domain-specific operations, then lowers the resulting
 abstraction directly to a hardware implementation using either pre-existing, hand-written kernels in
 an HDL~\cite{TODO} or implementations in a high level synthesis language~\cite{george14fpl}.
-In both cases, the compilation path tends to miss key cross-operation optimizations
+In both kernel-based techniques, the compilation path tends to miss key cross-operation optimizations
 like fusion and tiling, resulting in excessive transfers to and from main memory.
 In the latter case, the resulting generated accelerator designs suffer from the
 same problems as hand-written HLS code.
@@ -99,8 +99,7 @@ image processing, database processing, and machine learning~\cite{pldi13halide,e
 After domain-specific optimizations, a DSL compiler targeting
 our framework lowers its operations to an implementation using these patterns.
 
-%\christos{add ref to such the  language(s)}
-Our framework is composed of two phases. In the first phase,
+Compilation in the framework is composed of two phases. In the first phase,
 a high level compiler performs optimizations like loop fusion and loop and
 data tiling on the parallel pattern IR (Figure~\ref{fig:system-diag}a.).
 The IR is then automatically lowered into a hardware-specific intermediate
