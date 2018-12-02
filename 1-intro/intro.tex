@@ -53,7 +53,6 @@ the language's compiler does not allow pipelining of loops at arbitrary nesting 
 Programmers must keep in mind that, despite the software programming abstractions, they must employ hardware, not software, optimization techniques when using HLS tools.
 This makes it challenging to write code which produces fully optimized designs~\cite{nane2016survey}.
 
-
 \section{Domain-Specific Languages}
 As demands for specialization in hardware have been growing, so too have the demands for
 specialization in software programming models for improved CPU and GPU performance and programmer productivity.
@@ -79,43 +78,58 @@ abstraction directly to a hardware implementation using either pre-existing, han
 an HDL~\cite{TODO} or implementations in a high level synthesis language~\cite{george14fpl}.
 In both kernel-based techniques, the compilation path tends to miss key cross-operation optimizations
 like fusion and tiling, resulting in excessive transfers to and from main memory.
-In the latter case, the resulting generated accelerator designs suffer from the
+In the case of DSLs which generate HLS code, the resulting generated accelerator designs suffer from the
 same problems as hand-written HLS code.
 
 \section{Contributions}
-In this work, we propose a practical framework for automatic generation of
-efficient FPGA accelerators starting from domain-specific languages.
-The high level architecture of this framework is shown in Figure~\ref{fig:system-diag}.
+The key problem with existing DSL FPGA backends is that they attempt
+to bridge two vastly different levels of abstraction with no intermediate
+levels. This restricts the types of optimizations the compiler can reasonably
+perform, and consequently leads to inefficient designs.
+In this work, we propose a new practical framework for automatic generation of
+efficient accelerators implemented on reconfigurable architectures starting
+from domain-specific languages. As shown in Figure~\ref{fig:system-diag}, this
+framework improves upon existing approaches by introducing two intermediate levels of
+abstraction where key optimizations and tradeoff decisions can be made.
 
-We first present DSL compilers with a common intermediate abstraction composed of
+The system first presents DSL compilers with a common intermediate abstraction composed of
 parallel patterns like \emph{Map}, \emph{Reduce}, and \emph{FlatMap}.
-In previous work, parallel patterns have shown to serve the dual purpose of raising the
+A DSL targeting our framework lowers its operations to implementations using these patterns.
+We chose these abstractions because, in previous work, parallel patterns have
+been shown to serve the dual purpose of raising the
 level of abstraction for the
 programmer~\cite{ecoop13sujeeth,pldi13halide}, and providing richer
-semantic information to the compiler~\cite{delite-tecs14} about data parallelism
-and access pattern information. We use them here because they have also been shown
-to provide a common set of patterns across many computation domains, including
+semantic information to the compiler about data parallelism
+and access pattern information~\cite{delite-tecs14}.
+Specifically, we build on the existing body of work
+on the Delite compiler, which has previously been shown
+to provide a good, common set of parallel patterns across many computation domains, including
 image processing, database processing, and machine learning~\cite{pldi13halide,ecoop13sujeeth}.
-After domain-specific optimizations, a DSL compiler targeting
-our framework lowers its operations to an implementation using these patterns.
 
 Compilation in the framework is composed of two phases. In the first phase,
-a high level compiler performs optimizations like loop fusion and loop and
-data tiling on the parallel pattern IR (Figure~\ref{fig:system-diag}a.).
-The IR is then automatically lowered into a hardware-specific intermediate
-abstraction that explicitly captures information on parallelism,
-locality, and memory access pattern at all levels of loop nesting using
-parameterizable architectural templates (Figure~\ref{fig:system-diag}b.).
+a high level compiler performs optimizations like loop fusion and tiling
+on the parallel pattern IR (Figure~\ref{fig:system-diag}a.).
+
+The IR is then automatically lowered into a novel, hardware-specific intermediate
+language (Figure~\ref{fig:system-diag}b.).
+We introduce this new language in this work to address the problems in existing
+high-level synthesis tools. In particular, we identify several key
+abstractions required to create a new high-level synthesis language from the
+ground up, including more explicit syntax for managing memory, control,
+and accelerator-host interfaces on a reconfigurable architecture.
+We suggest that this ``clean slate'' approach to high-level synthesis language
+design leads to a language which is semantically cleaner when targeting
+reconfigurable architectures, particularly when optimizing for data locality and parallelism.
+These abstractions help the compiler to more easily optimize designs for improved performance.
+
+% that explicitly captures information on parallelism,
+%locality, and memory access pattern at all levels of loop nesting using
+%parameterizable architectural templates .
 A second, hardware-specific compiler then takes the portion of the program
 targeted for hardware acceleration and performs hardware-specific transformations and
 optimizations, including specialization of on-chip memories based on access patterns (Figure~\ref{fig:system-diag}c.).
 This phase also includes an optional automated search of the hardware design space
 to improve performance (Figure~\ref{fig:system-diag}d.).
-
-In this work, we first summarize high-level language abstractions required to create a new high-level synthesis language from the ground up, including syntax for managing memory, control, and accelerator-host interfaces on a reconfigurable architecture.
-We suggest that this ``clean slate'' approach to high-level synthesis language design leads to a language which is semantically cleaner when targeting reconfigurable architectures, particularly when optimizing for data locality and parallelism.
-These abstractions help programmer productivity and allow both the user and compiler to more easily optimize designs for improved performance.
-
 
 We then describe a new domain specific language (DSL) and compiler framework called Spatial which implements these abstractions to support higher level, performance oriented hardware accelerator design.
 Figure~\ref{fig:matmult} shows an example of a basic implementation of matrix multiplication in Spatial.
