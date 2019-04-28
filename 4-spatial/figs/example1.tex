@@ -4,7 +4,7 @@
 
 \newsavebox{\firFilter}
 \begin{lrbox}{\firFilter}
-\begin{lstlisting}[language=Spatial,linewidth=0.88\columnwidth]
+\begin{lstlisting}[language=Spatial,linewidth=0.5\columnwidth]
 def FIR_Filter(args: Array[String]) {
   val input   = StreamIn[Int](target.In)
   val output  = StreamOut[Int](target.Out)
@@ -28,11 +28,11 @@ def FIR_Filter(args: Array[String]) {
       ins <<= input
 
       // Create a reduce-accumulate tree with P inputs
-      Reduce(sum)(0 until width par P){i => 
+      Reduce(sum)(0 until width par P){i =>
         wts(i) * ins(i)
       }{(a,b) => a + b }
 
-      // Stream out the computed average 
+      // Stream out the computed average
       output := sum / width
     }
   }

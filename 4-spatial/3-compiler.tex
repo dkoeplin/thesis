@@ -1,19 +1,12 @@
 \section{The Spatial Compiler}
 \label{compiler}
 
-The Spatial compiler provides source-to-source translations from applications in the Spatial language to synthesizable hardware descriptions in Chisel RTL~\cite{chisel}.
+When targeting FPGAs, the Spatial compiler provides source-to-source translations from applications in the Spatial language to synthesizable hardware descriptions in Chisel RTL~\cite{chisel}.
+The output for CGRAs depends on the requirements of the hardware target. Host (CPU) code is generated in C++.
+Spatial is designed to capture algorithms that are intended to run on reconfigurable architectures,
+which gives rise to analyses and optimizations that are not used in software compilers.
 In this section, we describe the compiler's intermediate representation and its key passes, as summarized in Figure~\ref{fig:compilerflow}.
-Apart from chisel generation, these passes are common to targeting both FPGAs and the Plasticine CGRA. Details of targeting Plasticine are discussed in prior work~\cite{plasticine}.
-
-%For acceleratable code targeted to FPGAs, the output of the compiler is Chisel code \cite{chisel}, roughly the same level of abstraction as Verilog and VHDL.
-%The output for CGRAs depends on the requirements of the hardware target, while host (CPU) code is currently generated in C++.
-% Spatial is designed to capture algorithms that are intended to run on reconfigurable architectures,
-% which gives rise to analyses and optimizations that are not used in software compilers.
-% However, information about the target architecture is important to selectively perform a few extra
-% compiler passes and generate the best code for each.  Currently, Spatial can successfully target both FPGAs and a
-% CGRA, Plasticine, and needs to do certain specializations for each with awareness to what the underlying architecture
-% looks like.  Here we will briefly discuss what kinds of specializations are done for the two working targets and how the compiler facilitates these passes.
-
+Apart from Chisel generation, these passes are common to targeting both FPGAs and the Plasticine CGRA. Details of targeting Plasticine are discussed in prior work~\cite{plasticine}.
 
 \begin{figure}
 %%% trim = left, bottom, right, top
@@ -44,11 +37,6 @@ control nodes, memory allocation nodes, and primitive nodes.
 Control nodes represent state machine structures like \texttt{\small{Foreach}} and \texttt{\small{Reduce}} described in Section~\ref{controls}.
 Primitive nodes are operations which may consume, but never produce, control signals, including on-chip memory accesses.
 Primitive nodes are further broken down into ``physical'' operations requiring resources and ``ephemeral'' operations which are only used for bookkeeping purposes in the compiler. For example, bit selects and grouping of words into structs require no hardware resources but are used to track necessary wires in the generated code.
-
-
-
-% Edit gemm figure here https://docs.google.com/presentation/d/1mScE_E_D2OchZk3xhXiiFQegldOv9iOjSMSic8MITxg/edit?usp=sharing
-
 
 % The nodes that compose the IR of Spatial provide the handles necessary to do a range of
 % hardware optimizations that are specific to spatial architectures.  The combination of

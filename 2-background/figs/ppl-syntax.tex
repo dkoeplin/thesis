@@ -36,7 +36,7 @@ GroupByFold(d)(z){g}{c}: (K,V)$_1$
 \end{lrbox}
 
 
-\fontsize{10}{11}
+\fontsize{9}{10}
 \selectfont
 \begin{tabular}{l}
 \multicolumn{1}{l}{\bf{(a) Multi-Dimensional Patterns}} \\ \midrule
@@ -46,8 +46,8 @@ Mapping over a $D$-dimensional domain. \\
 \vspace{-8pt} \\
 {
 \begin{tabular}{lll}
-\argg{d}: & \hspace{-7pt}$D$-dimensional iteration domain. & $\mathbb{Z}^D$ \\
-\argg{m}: & \hspace{-7pt}Value function.   & $\mathbb{Z}_D\rightarrow V$ \\
+\argg{d}: &\hspace{-10pt} $\mathbb{Z}^D$  & \hspace{-4pt}$D$-dimensional iteration domain. \\
+\argg{m}: &\hspace{-10pt} $\mathbb{Z}_D\rightarrow V$ & \hspace{-4pt}Value function.   \\
 \end{tabular}
 }
 \\
@@ -58,15 +58,16 @@ Combination of $R$-dimensional tensors over a $D$-dimensional iteration domain. 
 \vspace{-8pt} \\
 {
 \begin{tabular}{lll}
-\argg{d}: & \hspace{-7pt}$D$-dimensional iteration domain. & $\mathbb{Z}^D$ \\
-\argg{r}: & \hspace{-7pt}Output index range.         & $\mathbb{Z}^R$ \\
-\argg{z}: & \hspace{-7pt}Initial accumulator         & $V^R$ \\
-\argg{f}: & \hspace{-7pt}(Offset, Value) function.   & $\mathbb{Z}_D \rightarrow (\mathbb{Z}_R, V^R \rightarrow V^R)$ \\
-\argg{c}: & \hspace{-7pt}Combine function.           & $(V^R, V^R) \rightarrow V^R$ \\
+\argg{d}: &\hspace{-10pt} $\mathbb{Z}^D$ & \hspace{-4pt}$D$-dimensional iteration domain.  \\
+\argg{r}: &\hspace{-10pt} $\mathbb{Z}^R$ & \hspace{-4pt}Output index range.         \\
+\argg{z}: &\hspace{-10pt} $V^R$          & \hspace{-4pt}Initial accumulator         \\
+\argg{f}: &\hspace{-10pt} $\mathbb{Z}_D \rightarrow (\mathbb{Z}_R, V^R \rightarrow V^R)$ & \hspace{-4pt}(Offset, Value) function.    \\
+\argg{c}: &\hspace{-10pt} $(V^R, V^R) \rightarrow V^R$& \hspace{-4pt}Combine function.  \\
 \end{tabular}
 }
 \\
-\\ \\
+\\
+\\
 \multicolumn{1}{l}{\bf{(b) One Dimensional Patterns}} \\ \midrule
 \multirow{1}{*}{\usebox{\FlatMap}} \\
 \vspace{-7pt} \\
@@ -74,8 +75,8 @@ Concatenation of 1-dimensional arrays over a 1-dimensional iteration domain. \\
 \vspace{-8pt} \\
 {
 \begin{tabular}{lll}
-\argg{d}: & \hspace{-7pt}1-dimensional iteration domain. & $\mathbb{Z}^1$ \\
-\argg{n}: & \hspace{-7pt}Multi-value function. & $\mathbb{Z} \rightarrow V^1$ \\
+\argg{d}:&\hspace{-10pt} $\mathbb{Z}^1$ & \hspace{-4pt}1-dimensional iteration domain.  \\
+\argg{n}:&\hspace{-10pt} $\mathbb{Z} \rightarrow V^1$ & \hspace{-4pt}Multi-value function. \\
 \end{tabular}
 }
 \\
@@ -86,90 +87,13 @@ Associative reduction of values over a 1-dimensional domain based on paired key 
 \vspace{-8pt} \\
 {
 \begin{tabular}{lll}
-\argg{d}: & \hspace{-7pt}1-dimensional iteration domain. & $\mathbb{Z}^1$ \\
-\argg{z}: & \hspace{-7pt}Identity value. & $V$ \\
-\argg{g}: & \hspace{-7pt}(Key,Value) function. & $\mathbb{Z} \rightarrow (K,V)$ \\
-\argg{c}: & \hspace{-7pt}Combination function. & $(V,V) \rightarrow V$ \\
+\argg{d}: &\hspace{-10pt} $\mathbb{Z}^1$ & \hspace{-4pt}1-dimensional iteration domain. \\
+\argg{z}: &\hspace{-10pt} $V$            & \hspace{-4pt}Identity value. \\
+\argg{g}: &\hspace{-10pt} $\mathbb{Z} \rightarrow (K,V)$ & \hspace{-4pt}(Key,Value) function.  \\
+\argg{c}: &\hspace{-10pt} $(V,V) \rightarrow V$  & \hspace{-4pt}Combination function. \\
 \end{tabular}
 } \\
 \end{tabular}
-
-%{\usebox{\MapHLL}} &
-%{\usebox{\MapPPL}} \\ \arrayrulecolor[gray]{0.8}\hline
-
-%{\usebox{\MultiFold}} & {\usebox{\MultiFoldHLL}} & {\usebox{\MultiFoldPPL}} \\ \arrayrulecolor[gray]{0.8}\hline
-
-%{textbf{\texttt{One-dimensional}}} & {} & {} \\
-%{\usebox{\FlatMap}} & {\usebox{\FlatMapHLL}} & {\usebox{\FlatMapPPL}} \\ \arrayrulecolor[gray]{0.8}\hline
-%{\usebox{\GroupByFold}} & {\usebox{\GroupByFoldHLL}} & {\usebox{\GroupByFoldPPL}} \\
-%
-% {\begin{tabular*}{0.95\textwidth}{llll}
-% {\bf User-defined Values} & & & \\ \hline
-% {\begin{lstlisting}[language=PPLTable]
-% d : Integer$_D$
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% input domain
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% m : Index$_D$ => V
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% value function
-% \end{lstlisting}} \\
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% r : Integer$_R$
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% output range
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% n : Index => V$_1$
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% multi-value function
-% \end{lstlisting}} \\
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% z : V$_R$
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% init accumulator
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% f : Index$_D$ => (Index$_R$, V$_R$ => V$_R$)
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% (location, value) function
-% \end{lstlisting}} \\
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% c : (V$_R$,V$_R$) => V$_R$
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% combine accumulator
-% \end{lstlisting}} \hspace{51pt} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% g : Index => (K, V => V)$_1$
-% \end{lstlisting}} &
-%
-% {\begin{lstlisting}[numbers=none,mathescape=true]
-% (key, value) function
-% \end{lstlisting}} \\
-% \noalign{\hrule height 1.5pt}
-%\end{tabular}
 
 \caption{\label{fig:ppl-syntax}Definition of the patterns in the parallel pattern language (PPL). $V^D$ denotes a tensor with $D$ dimensions and elements of type $V$, while $V_D$ denotes a tuple of $D$ elements of type $V$.}
 \end{figure*}

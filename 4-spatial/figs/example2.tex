@@ -3,7 +3,7 @@
 
 \newsavebox{\sortMerge}
 \begin{lrbox}{\sortMerge}
-\begin{lstlisting}[language=Spatial,linewidth=0.88\columnwidth]
+\begin{lstlisting}[language=Spatial,linewidth=0.5\columnwidth]
 def Merge_Sort(offchip: DRAM[Int], offset: Int) {
   val N = 1024  // Static size of chunk to sort
   Accel {
@@ -18,11 +18,11 @@ def Merge_Sort(offchip: DRAM[Int], offset: Int) {
         val end   = min(i + 2*m - 1, N) + 1
 
         // Split data into lower and upper FIFOs
-        Foreach(from until i + m){ x => 
-          lower.enq(data(x)) 
+        Foreach(from until i + m){ x =>
+          lower.enq(data(x))
         }
-        Foreach(i + m until end){ y => 
-          upper.enq(data(y)) 
+        Foreach(i + m until end){ y =>
+          upper.enq(data(y))
         }
 
         // Merge of the two FIFOs back into data

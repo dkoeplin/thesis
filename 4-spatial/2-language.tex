@@ -10,7 +10,7 @@ directly implementing high-level hardware designs or by targeting Spatial from a
 %Spatial is currently implemented as an embedded language in Scala.
 %Spatial employs a mix of imperative and functional paradigms to improve the amount of information available to the compiler.
 In this section, we describe the abstractions Spatial includes to balance productivity and performance-oriented detail.
-While space does not permit a full specification of the language, Table~\ref{t:syntaxTable} provides an overview of the core subset of Spatial's syntax.
+Table~\ref{t:syntaxTable} provides an overview of a core subset of Spatial's syntax.
 %including control structures, optional user scheduling directives, memory templates for various levels of the memory hierarchy, and design space parameters.
 
 
@@ -23,139 +23,6 @@ While space does not permit a full specification of the language, Table~\ref{t:s
 
 
 % Table~\ref{t:control} gives a summary of the control structures available in Spatial.
-
-
-% \begin{table*}
-% \centering
-% \begin{tabular}{c|l|l}
-% \toprule
-
-% & \multicolumn{1}{l}{\bf{Instantiation Syntax}} & \bf{Description} \\ \midrule
-
-
-% \multirow{7}{*}{On-chip}
-% &{
-% \begin{lstlisting}[language=SpatialTable]
-% FIFO[T](depth)
-% \end{lstlisting}
-% }
-% & Queue (First-In, First-Out) with a capacity of \texttt{depth} elements of type \texttt{T} \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable,backgroundcolor=\color{lightback},linewidth=0.87\textwidth]
-% FILO[T](depth)
-% \end{lstlisting}
-% }
-% & Stack (First-In, Last-Out) with a capacity of \texttt{depth} elements of type \texttt{T} \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable]
-% LineBuffer[T](r, c)
-% \end{lstlisting}
-% }
-% & On-chip buffered scratchpad containing \texttt{r} buffers of \texttt{c} elements \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable,backgroundcolor=\color{lightback},linewidth=0.87\textwidth]
-% LUT[T](dims+)(elems+)
-% \end{lstlisting}
-% }
-% & Read-only Lookup Table containing the given elements of type \texttt{T} \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable]
-% Reg[T](reset*)
-% \end{lstlisting}
-% }
-% & Register holding a value of type \texttt{T}, with optional \texttt{reset} value \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable,backgroundcolor=\color{lightback},linewidth=0.87\textwidth]
-% RegFile[T](dims+)
-% \end{lstlisting}
-% }
-% & Register file of elements of type \texttt{T} with given dimensions \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable]
-% SRAM[T](dims+)
-% \end{lstlisting}
-% }
-% & On-chip scratchpad with given dimensions containing values of type \texttt{T} \\
-
-
-
-% \midrule
-
-
-% \multirow{4}{*}{Host}
-% &{
-% \begin{lstlisting}[language=SpatialTable,backgroundcolor=\color{lightback},linewidth=0.87\textwidth]
-% ArgIn[T]
-% \end{lstlisting}
-% }
-% & Accelerator register initialized by the host \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable]
-% ArgOut[T]
-% \end{lstlisting}
-% }
-% & Accelerator register visible to the host after accelerator execution \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable,backgroundcolor=\color{lightback},linewidth=0.87\textwidth]
-% HostIO[T]
-% \end{lstlisting}
-% }
-% & Accelerator register which the host may read and write at any time \\
-
-% &{
-% \begin{lstlisting}[language=SpatialTable]
-% DRAM[T](dims+)
-% \end{lstlisting}
-% }
-% & Burst-addressable, host-allocated off-chip memory visible to the accelerator \\
-
-
-
-% \midrule
-
-
-
-% \multirow{2}{*}{Streams} &
-% {
-% \begin{lstlisting}[language=SpatialTable,backgroundcolor=\color{lightback},linewidth=0.87\textwidth]
-% StreamIn[T](bus)
-% \end{lstlisting}
-% }
-% & Streaming input from outside the accelerator, connected to the specified \texttt{bus} \\
-
-% &
-% {
-% \begin{lstlisting}[language=SpatialTable]
-% StreamOut[T](bus)
-% \end{lstlisting}
-% }
-% & Streaming output exiting the accelerator, connected to the specified \texttt{bus} \\
-
-
-
-
-
-% % & \multicolumn{1}{l}{\texttt{FIFO[T]}}       & A queue (First-In, First-Out) containing elements of type T \\
-% % & \multicolumn{1}{l}{\texttt{FILO[T]}}       & A stack (First-In, Last-Out) containing elements of type T \\
-% % & \multicolumn{1}{l}{\texttt{LineBuffer[T]}} & An on-chip buffered scratchpad with values of type T   \\
-% % & \multicolumn{1}{l}{\texttt{LUT[T]}}    & A read only Look-Up Table of elements of type T \\
-% % & \multicolumn{1}{l}{\texttt{Reg[T]}}        & A register holding a value of type T \\
-% % & \multicolumn{1}{l}{\texttt{RegFile[T]}}    & A register file with values of type T \\
-% % & \multicolumn{1}{l}{\texttt{SRAM[T]}}     & An on-chip scratchpad with values of type T \\
-% \end{tabular}
-% \caption{Spatial memory and streaming interface templates. Square brackets (e.g. \texttt{[T]}) represent a type-parameter. A '\texttt{+}' denotes an argument which can be given one or more times, while a '\texttt{*}' denotes that an optional argument. \texttt{DRAMs}, \texttt{LUTs}, \texttt{RegFiles}, and \texttt{SRAMs} can be allocated with an arbitrary number of dimensions.}
-% \label{t:summary}
-% \end{table*}
-
-
 
 %The host partition of Spatial supports a subset of constructs as Scala.  This part of the language is built
 %on previous work \todo{is it fair to claim it leverages Delite?} and produces efficient C++ code.  This portion is also responsible for
@@ -319,7 +186,7 @@ Spatial offers a variety of memory templates that enable the user to abstractly 
 %These templates are available in a form similar to a data structures library, with each memory type being specialized for specific operations and access patterns.
 The Spatial compiler is aware of all of these memory types and is able to automatically optimize each of them.
 
-Spatial's ``on-chip'' memories represent the creation of statically sized, logical memory spaces.
+Spatial's ``on-chip'' memories, overviewed in Figure~\ref{t:syntaxTable}c, represent the creation of statically sized, logical memory spaces.
 Supported memory types include read-only lookup-tables (\texttt{\small{LUTs}}), scratchpads (\texttt{\small{SRAM}}), line buffers (\texttt{\small{LineBuffer}}), fixed size queues and stacks (\texttt{\small{FIFO}} and \texttt{\small{LIFO}}),  registers (\texttt{\small{Reg}}), and register files (\texttt{\small{RegFile}}).
 %Figure~\ref{f:memexamples} shows some examples of operations on instances of these memory types.
 These memories are always allocated using resources on the accelerator, and by default are not accessible by the host.
@@ -387,8 +254,8 @@ An application's implicit and explicit application parameters together define a 
 
 \subsection{Examples}
 
-\input{figs/example1}
-\input{figs/example2}
+\input{4-spatial/figs/example1}
+\input{4-spatial/figs/example2}
 
 We conclude discussion of the Spatial language with two examples.
 Figure~\ref{fig:firfilter} shows a streaming implementation of a finite impulse response (FIR) filter.

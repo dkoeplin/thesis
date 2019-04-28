@@ -1,7 +1,7 @@
 \subsection{Area and Runtime Estimation}
 \label{sec:modeling}
 In this section, we describe our modeling methodology. Our models account for the various
-design parameters for each DHDL template, as listed in Table~\ref{t-hwtemplates}, as well as optimizations done by low-level logic
+design parameters for each Spatial node, as well as optimizations done by low-level logic
 synthesis tools in order to accurately estimate resource usage.
 
 \subsection{Modeling Considerations}
@@ -45,13 +45,13 @@ resources that are rendered unusable. In our experiments, the number of unusable
 %(packed lut count) + max(0, regs/2 - (packed lut count))
 
 \subsection{Methodology}
-In order to model runtime and resource requirements of DHDL designs, we first need an estimate of the area requirements and
-propagation delay of every DHDL template. Area requirements include the number of digital signal processing
+In order to model runtime and resource requirements of Spatial designs, we first need an estimate of the area requirements and
+propagation delay of every Spatial node. Area requirements include the number of digital signal processing
 units (DSPs), device block RAMs, LUTs, and registers that each template requires. To facilitate LUT packing estimation,
 we split template LUT resource requirements into the number of ``packable'' and ``unpackable'' LUTs required.
 %For templates with documented implementations such as floating point operations \cite{fp-altera}, we gather resource and cycle data in part by summarizing IP core documentation. However, these user manuals typically do not give resource usage breakdowns at the binary function level.
 We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters as given in Table~\ref{t-hwtemplates}.
-Using this data, we create analytical models of each DHDL template's resource requirements and cycle counts for
+Using this data, we create analytical models of each Spatial nodes's resource requirements and cycle counts for
 a predefined fabric clock. The area and cycle count of controller templates are modeled as functions of the latencies of the nodes contained within them.
 The total cycle count for a \emph{MetaPipe}, for example, is modeled using the recursive function
 \begin{displaymath}
@@ -64,11 +64,11 @@ number and length of memory commands, as well as contention due to competing acc
 %We show a subset of the template models used in our experiments in Table~\ref{table:benchmarks}.
 %\note{not sure I understand this. Which part is app-independent. Presumably the way to explore the space will dependt on the application. Is this only for the device models? }
 
-Using these models, we run a pair of analysis passes over the application's DHDL intermediate representation to estimate design cycle counts and area requirements.
+Using these models, we run a pair of analysis passes over the application's intermediate representation to estimate design cycle counts and area requirements.
 
 \subsubsection{Cycle Count Estimation}
 In the first analysis pass, we estimate the total runtime of the design on the FPGA.
-Since the DHDL intermediate representation is hierarchical in nature, this pass is done recursively.
+Since the Spatial intermediate representation is hierarchical in nature, this pass is done recursively.
 The total runtime of \emph{MetaPipe} and \emph{Sequential} nodes is calculated first by determining
 the runtime of all controller nodes contained within them. The total propagation delay of a single
 iteration of a \emph{Pipe} is the length of the body's critical path, calculated using a depth first
@@ -82,7 +82,7 @@ Iteration counts are then used to calculate the total runtime of the respective 
 Since the FPGA resource utilization of a design is sensitive to factors that are not directly captured
 in the design's dataflow graph, we adopt a hybrid approach in our area analysis.
 
-We first estimate the area of the DHDL design by counting the resource
+We first estimate the area of the design by counting the resource
 requirements of each node using their pre-characterized area models. In \emph{Pipe} bodies, we also
 estimate the resources required for delaying signals. This is done by recursively calculating the
 propagation delay of every path to each node using depth first search. Paths with slack relative to
