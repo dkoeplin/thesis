@@ -110,7 +110,7 @@ abstraction where key optimizations and tradeoff decisions can be made.
 
 \begin{figure*}
 \centering
-\includegraphics[height=6cm]{1-intro/figs/system-diag}
+\includegraphics[height=12cm]{1-intro/figs/system-diag}
 \caption{\label{fig:system-diag}The high level diagram of the framework proposed in this work.
 The framework compiles high level domain specific languages (DSLs) from a
 common parallel pattern intermediate representation (IR). Using a compiler
@@ -136,11 +136,12 @@ image processing, database processing, and machine learning~\cite{pldi13halide,e
 
 Compilation in the framework is composed of two phases. In the first phase,
 a high level compiler performs optimizations like loop fusion and tiling
-on the parallel pattern IR (Figure~\ref{fig:system-diag}b.).
+on the parallel pattern IR (Figure~\ref{fig:system-diag}b.), resulting in an
+optimized, tiled parallel pattern IR (Figure~\ref{fig:system-diag}c.).
 
 The portion of the IR targeted for hardware acceleration is then automatically
 lowered into a novel, hardware-specific intermediate
-representation (Figure~\ref{fig:system-diag}c.).
+representation (Figure~\ref{fig:system-diag}d.).
 We introduce this new representation, which we call the Spatial IR,
 in this work to address the problems in existing
 high-level synthesis tools. In particular, we identify several key
@@ -152,7 +153,7 @@ design leads to a representation which is semantically cleaner when targeting
 reconfigurable architectures, particularly when optimizing for data locality and parallelism.
 These abstractions help the compiler to more easily optimize designs for improved performance.
 
-The Spatial IR is then optimized and lowered further by the Spatial compiler (Figure~\ref{fig:system-diag}d.).
+The Spatial IR is then optimized and lowered further by the Spatial compiler (Figure~\ref{fig:system-diag}e.).
 In this work, we describe the Spatial compiler and several key optimizations it
 performs for produces performant hardware accelerator designs.
 These optimizations include specialization of on-chip memories based on access patterns,
@@ -161,7 +162,7 @@ We also discuss an optional automated search of the hardware design space
 to analyze tradeoffs and improve performance.
 We describe two approaches to this automated search, one using heuristic random
 search, Spatial employs an active machine learning framework called
-HyperMapper \cite{Bodin2016:PACT16} to drive exploration.
+HyperMapper~\cite{Bodin2016:PACT16} to drive exploration.
 
 When targeting FPGAs, we show that Spatial generates optimized, synthesizable
 code along with C++ code which can be used on a host CPU to administrate
@@ -172,14 +173,26 @@ While the constructs in Spatial are general across reconfigurable architectures
 and can also be used to target CGRAs, in this work we focus on Spatial in the
 context of our larger framework targeting FPGAs.
 
-%Similarly, we introduce Spatial, a complete Domain Specific Language (DSL)
-%that both provides the high-level abstractions needed to simplify programming spatial architectures and
-%the hardware-specific optimizations over the entire application that are otherwise extremely challenging
-%to do by hand in a low level language.
-
 \section{Contributions}
+The system proposed in this work was developed in part on top of work done by
+the Delite team within the Pervasive Parallelism Lab at Stanford University.
+While the Spatial compiler is a novel implementation begun with this work, it
+is inspired heavily by prior Delite and DSL compiler work. Hassan Chafi~\cite{hassan-thesis} and
+Arvind Sujeeth~\cite{arvind-thesis} showed the expressitivity benefits of
+parallel-pattern based DSLs across a wide variety of domains.
+Kevin Brown~\cite{kevin-thesis}
+showed the performance benefits of parallel pattern
+could be extended across multi-core and cluster CPUs, while
+HyoukJoong Lee showed that the same approach can be used to target GPUs
+and FPGAs~\cite{hj-thesis}. The core of Spatial's IR and compiler,
+dubbed ``Argon'', began as a customized rewrite of Lightweight Modular Staging
+by Tiark Rompf, et. al.~\cite{tiark-thesis,lms} with additional consideration for managing
+compiler metadata and \todo{???}.
 
-To summarize, the core contributions of this work are as follows:
+The key contribution of this work is the proposal and demonstration of a system
+which generates efficient, performant hardware accelerator designs
+for FPGAs from high level, domain specific languages.
+We further summarize the core contributions of this work are as follows:
 \vspace{-5pt}
 \begin{itemize}
   \item We describe a systematic set of rules for tiling parallel patterns,
@@ -206,7 +219,7 @@ To summarize, the core contributions of this work are as follows:
   We then describe our novel implementation of these constructs in the Spatial intermediate representation
   and discuss the optimizations that these abstractions enable in the Spatial compiler.
   We also discuss two methods of automated design parameter space exploration,
-  first using heurstic search and the second using HyperMapper.
+  the first using heurstic search and the second using HyperMapper.
 
   \vspace{5pt}
 
