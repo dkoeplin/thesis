@@ -87,56 +87,22 @@ essentially the same except that the input domain is inferred from the shape of
 the input collection. Using explicit indices in the intermediate language allows
 us to model more user-facing patterns and more input access patterns with fewer internal primitives.
 
-% \begin{figure}\centering
-% \begin{lstlisting}[mathescape=true]
-% points: Array2D[Float](n,d) // data to be clustered
-% centroids: Array2D[Float](k,d) // current centroids
-
-% // Assign each point to closest centroid
-% minDistIndex = map(n){ i =>
-%   pt1 = points.slice(i, *)
-%   minDistWithIndex = fold(k)((max, -1)){ j =>
-%     pt2 = centroids.slice(j, *)
-%     dist = fold(d)(0){ k =>
-%              acc => acc + square(pt1(k) - pt2(k))
-%            }{ (a,b) => a + b }
-%     acc => if (acc._1 < dist) acc else (dist, j)
-%   }{ (a,b) => if (a._1 < b._1) a else b }
-%   minDistWithIndex._2
-% }
-
-% // Sum of points assigned to each centroid
-% sums = multiFold(n)(k,d)(zeros(1,d)){ i =>
-%   ((minDistIndex(i), 0), acc => {
-%     pt = points.slice(i, *)
-%     map(d){ j => acc(j) + pt(j) } })
-% }{ (a,b) => map(d){ j => a(j) + b(j) } }
-
-% // Number of points assigned to each centroid
-% counts = multiFold(n)(k){ i => (minDistIndex(i),
-%   acc => acc + 1 )}{ (a,b) => a + b }
-
-% // Average assigned points to compute new centroids
-% newCentroids = map(k,d){ (i,j) =>
-%   sums(i,j) / counts(i)
-% }
-% \end{lstlisting}
-% \caption{$k$-means clustering using the parallel patterns in Figure~\ref{fig:ppl-syntax}.}
-% \label{fig:kmeans}
-% \end{figure}
-
 \emph{Map} generates a single element per index, aggregating the results into a fixed-size output collection.
 Note that the value function can close over an arbitrary number of input collections, and therefore this pattern can represent classic parallel operations like \emph{map}, \emph{zip},
 and \emph{zipWithIndex}.
 
 \emph{MultiFold} is a generalization of a \emph{fold} which reduces generated values into a specified region of a (potentially) larger accumulator using an associative combine function.
-The initial value $z$ is required to be an identity element of this function, and must have the same size and shape as the final output.
+The initial acummulator value $z$ is required to be an identity element of this function, and must have the same size and shape as the final output.
 The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator. Note that a traditional \emph{fold} is the special case of MultiFold where every generated value is the full size of the accumulator.
-$f$ then converts each index into a function that consumes the specified slice of the current accumulator and returns the new slice. If the pattern's implementation maintains multiple partial accumulators in parallel, the combine function $c$ reduces them into the final result.
+Function $f$ then converts each index into a function that consumes the specified
+slice of the current accumulator and returns the new slice. If the pattern's
+implementation maintains multiple partial accumulators in parallel, the combine
+function $c$ reduces them into the final result.
 
 \emph{FlatMap} generates an arbitrary number of values per index.
 These values are all concatenated into a flattened output.
-As the output size can only be determined dynamically, we restrict FlatMap to one-dimensional domains so that dynamically growing the output is easily defined.
+As the output size can only be determined dynamically, we restrict FlatMap to
+one-dimensional domains so that dynamically growing the output is easily defined.
 Note that this primitive also easily expresses a \emph{filter}.
 
 \emph{GroupByFold} reduces generated values into one of many buckets where the bucket is selected by generating a key along with each value, i.e. it is a fused version of a \emph{groupBy} followed by a \emph{fold} over each bucket.
@@ -176,8 +142,8 @@ val newCentroids = groupedPoints.map { case (k,v) =>
 \end{figure}
 
 \begin{figure}\centering
-\begin{lstlisting}
-points: Array2D[Float](n,d) // data to be clustered
+\begin{lstlisting}[language=Scala]
+points: Array2D[Float](n,d)    // data to be clustered
 centroids: Array2D[Float](k,d) // current centroids
 
 // Sum and number of points assigned to each centroid
@@ -216,18 +182,22 @@ newCentroids = map(k,d){ (i,j) =>
 \end{figure}
 
 \paragraph{Example}
-Now that we have defined the operations, we will use them to implement k-means clustering as an example application.
-For reference, first consider $k$-means implemented using the standard Scala collections operations, as shown in Figure~\ref{fig:kmeans}.
-We will use this application as a running example throughout the remainder of this paper, as it exemplifies many of the advantages of using parallel patterns as an abstraction for generating efficient hardware.
-$k$-means consumes a set of $n$ sample points of dimensionality $d$ and attempts to cluster those points by finding the $k$ best cluster centroids for the samples.
+Now that we have defined the parallel pattern operations, we will use them to
+implement example k-means clustering application.
+For reference, first consider $k$-means implemented using the standard Scala
+collections operations, as shown in Figure~\ref{fig:kmeans}.
+$k$-means consumes a set of $n$ sample points of dimensionality $d$ and
+attempts to cluster those points by finding the $k$ best cluster centroids for the samples.
 This is achieved by iteratively refining the centroid values.
 (We show only one iteration in Figure~\ref{fig:kmeans} for simplicity.)
-First, every sample point is assigned to the closest current centroid by computing the distance between every sample and every centroid.
+First, every sample point is assigned to the closest current centroid by
+computing the distance between every sample and every centroid.
 Then new centroid values are computed by averaging all the samples assigned to each centroid.
 This process repeats until the centroid values stop changing.
-Previous work~\cite{rompf12optimizing,brown16clusters,chambers10flumejava} has shown how to stage a DSL application like $k$-means, lowering it into a parallel pattern IR similar to ours, as well as how to perform multiple high-level optimizations automatically on the IR.
+Previous work~\cite{rompf12optimizing,brown16clusters,chambers10flumejava} has shown how to stage a DSL application like $k$-means, lowering it into a parallel pattern IR similar to the one we define here, as well as how to perform multiple parallel pattern fusion automatically on the IR.
 One of the most important of these optimizations is fusing patterns together, both vertically (to decrease the reuse distance between producer-consumer relationships) and horizontally (to eliminate redundant traversals over the same domain).
-Figure~\ref{fig:kmeans-fused} shows the structure of $k$-means after it has been lowered into PPL and fusion rules have been applied.
-We have also converted the nested arrays in the Scala example to our multidimensional arrays.
+Figure~\ref{fig:kmeans-fused} shows the structure of $k$-means after it has been lowered into PPL and pattern fusion rules~\cite{rompf12optimizing} have been applied.
+For simplicity, we have also converted the nested arrays in the Scala example to multidimensional arrays.
 This translation requires the insertion of \emph{slice} operations in certain locations, which produce a view of a subset of the underlying data.
-For the remainder of this work, we will assume a high-level translation from user DSL code to PPL exists and always start from the parallel pattern intermediate representation.
+For the remainder of this work, we will assume the existence of a parallel pattern backend
+for high level DSLs of interest and always start from the parallel pattern intermediate representation.
