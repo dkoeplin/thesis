@@ -1,9 +1,7 @@
-\begin{table*}[t]
-\centering\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-{\bf High Level Language}                            & {\bf Strip Mined PPL }       & {\bf Interchanged PPL} \\ \midrule
-{\begin{lstlisting}[numbers=none]
+\begin{figure}
+\centering
+
+\begin{lstlisting}[language=Scala,numbers=none,basicstyle=\fontsize{9}{10}\beramonott]
 // Matrix Multiplication
 x: Array[Array[Float]] // m x p
 y: Array[Array[Float]] // p x n
@@ -14,9 +12,11 @@ z = x.map{row =>
     }.sum
   }
 }
-\end{lstlisting}}
-&
-{\begin{lstlisting}[numbers=none]
+\end{lstlisting}
+a. High level language for matrix multiplication of matrices x and y.
+\vspace{10pt}
+
+\begin{lstlisting}[language=Scala,numbers=none,basicstyle=\fontsize{9}{10}\beramonott]
 multiFold(m/b0,n/b1)(m,n)(zeros(m,n)){(ii,jj) =>
 (*@\color{vbgray}{\vrule}@*)  ((ii,jj), zTile =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  map(b0,b1){(i,j) =>
@@ -31,9 +31,11 @@ multiFold(m/b0,n/b1)(m,n)(zeros(m,n)){(ii,jj) =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  zTile(i,j) + tile
 (*@\color{vbgray}{\vrule}@*)  })
 }(_)
-\end{lstlisting}}
-&
-{\begin{lstlisting}[numbers=none]
+\end{lstlisting}
+b. Strip mined PPL representation.
+\vspace{10pt}
+
+\begin{lstlisting}[language=Scala,numbers=none,basicstyle=\fontsize{9}{10}\beramonott]
 multiFold(m/b0,n/b1)(m,n)(zeros(m,n)){(ii,jj) =>
 (*@\color{vbgray}{\vrule}@*)  tile = multiFold(p/b2)(b0,b1)(...){kk =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  xTile = x.copy(b0 + ii, b2 + kk)
@@ -52,8 +54,9 @@ multiFold(m/b0,n/b1)(m,n)(zeros(m,n)){(ii,jj) =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  map(b0,b1){(i,j) => zTile(i,j) + tile(i,j)}
 (*@\color{vbgray}{\vrule}@*)  })
 }(_)
-\end{lstlisting}} \\ \bottomrule
-\end{tabular}
+\end{lstlisting}
+c. Interchanged PPL representation.
+
 \caption{Example of the pattern interchange transformation applied to matrix multiplication.}
-\label{table:interchange-examples}
-\end{table*}
+\label{fig:interchange-examples}
+\end{figure}

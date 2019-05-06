@@ -1,41 +1,42 @@
-\begin{table*}[t]
+\begin{table}
 \small\centering
 \begin{tabular}{@{}lll@{}}
 \toprule
 {\bf High Level Language}                            & {\bf PPL }       & {\bf Strip Mined PPL} \\ \midrule
-{\begin{lstlisting}[numbers=none,language=Scala]
+{\begin{lstlisting}[language=Scala,numbers=none,backgroundcolor=\color{white}]
 // Element-wise Map
-val x: Array[Float] // length d
+val x = Array[Float](d)
 x.map{e => 2*e}
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white},backgroundcolor=\color{white}]
 map(d){i => 2*x(i)}
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 multiFold(d/b)(d)(zeros(d)){ii =>
   xTile = x.copy(b + ii)
   (i, map(b)(b){i => 2*xTile(i) })
 }(_)
 \end{lstlisting}} \\ \midrule
-{\begin{lstlisting}[numbers=none, language=Scala]
+{\begin{lstlisting}[language=Scala,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 // Sums along matrix rows
-val x: Array[Array[Float]] // m x n
+val x = Array2D[Float](m x n)
 x.map{ row =>
   row.fold(0){ (a,b) => a + b }
 }
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none,language=PPL]
-multiFold(m,n)(m)(zeros(m)){ (i,j) =>
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
+multiFold(m,n)(m)(zeros(m))
+{ (i,j) =>
   (i, acc => acc + x(i,j))
 }{(a,b) =>
   map(n){(j) => a(j) + b(j)}
 }
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 multiFold(m/b0,n/b1)(m)(zeros(m)){ (ii,jj) =>
   xTile = x.copy(b0 + ii, b1 + jj)
   tile = multiFold(b0,b1)(b0)(zeros(b0)){ (i,j) =>
@@ -50,42 +51,42 @@ multiFold(m/b0,n/b1)(m)(zeros(m)){ (ii,jj) =>
   }{(a,b) => map(m){i => a(i) + b(i)}}
 }
 \end{lstlisting}} \\ \midrule
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=Scala,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 // Simple Filter
-val x: Array[Float] // length d
+val x = Array[Float](d)
 x.flatMap{ e =>
   if (e > 0) e else []
 }
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 flatMap(d){i =>
   if (x(i) > 0) x(i) else []
 }
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 flatMap(d/b)(1){ii =>
   eTile = x.copy(b + ii)
   flatMap(b){i =>
     if (eTile(i) > 0) eTile(i) else []
 }}
 \end{lstlisting}} \\ \midrule
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=Scala,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 // Histogram Calculation
-val x: Array[Float] // length d
+val x = Array[Float](d)
 x.groupByFold(0){ r =>
   (r/10, 1)
 }{ (a,b) => a + b }
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 groupByFold(d)(0){i =>
   (x(i)/10, 1)
 }{(a,b) => a + b }
 \end{lstlisting}}
 &
-{\begin{lstlisting}[numbers=none]
+{\begin{lstlisting}[language=PPLTable,numbers=none,basicstyle=\fontsize{7}{7}\beramonott,backgroundcolor=\color{white}]
 groupByFold(d/b)(0){ii =>
   xTile = x.copy(b + ii)
   groupByFold(b)(0){i =>
@@ -96,4 +97,4 @@ groupByFold(d/b)(0){ii =>
 \end{tabular}
 \caption{Examples of the parallel pattern strip mining transformation on Map, MultiFold, FlatMap, and GroupByFold}
 \label{table:stripmine-examples}
-\end{table*}
+\end{table}

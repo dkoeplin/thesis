@@ -7,34 +7,11 @@
 \definecolor{bar3}{HTML}{9ABC5F}
 \definecolor{bar4}{HTML}{8163A0}
 
-We evaluate our approach to hardware generation described in Sections~\ref{transformations} and \ref{hardware} by comparing the performance and
-area utilization of the FPGA implementations of a set of data analytic benchmarks.
-We focus our investigation on the relative improvements that tiling and metapipelining provide over hardware designs that do not have these features.
-
-\begin{figure*}[ht]
-\centering
-\includegraphics[width=\textwidth]{figs/newspeedupbars1.pdf}
-
-\vspace{-10pt}
-
-\includegraphics[width=\textwidth]{figs/newspeedupbars2.pdf}
-
-{
-\fontfamily{phv}\selectfont
-\footnotesize
-% \raisebox{-0.2em}{\tikz{\path[fill=bar3] (0,0) rectangle (2em,1em);}}
-% base design
-% \hspace{2em}
-\raisebox{-0.2em}{\tikz{\path[fill=bar1] (0,0) rectangle (1em,1em);}}
-+tiling
-\hspace{2em}
-\raisebox{-0.2em}{\tikz{\path[fill=bar2] (0,0) rectangle (1em,1em);}}
-+tiling+metapipelining
-}
-
-\caption{Speedups and resource usages, relative to respective baseline designs, resulting from tiling and metapipelining.}
-\label{fig:speedup-bars}
-\end{figure*}
+We conclude this chapter by evaluating our approach to hardware generation
+described in Sections~\ref{transformations} and \ref{hardware} by comparing the performance and
+area utilization of generated FPGA implementations of a set of data analytic benchmarks.
+We focus our investigation on the relative improvements that our tiling and metapipelining transformations
+provide over generated hardware designs that do not have these features.
 
 \begin{table}
 \centering\footnotesize
@@ -109,8 +86,33 @@ We evaluate our approach against the baseline by generating two hardware configu
 a configuration with tiling but no metapipelining, and a configuration with both tiling and metapipelining optimizations enabled.
 %\todo{Reasoning as to why we don't show metapipelining alone?}
 
+\subsection{Discussion}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{3-delite/figs/newspeedupbars1.pdf}
+\vspace{10pt}
+\includegraphics[width=\textwidth]{3-delite/figs/newspeedupbars2.pdf}
+
+{
+\fontfamily{phv}\selectfont
+\footnotesize
+% \raisebox{-0.2em}{\tikz{\path[fill=bar3] (0,0) rectangle (2em,1em);}}
+% base design
+% \hspace{2em}
+\raisebox{-0.2em}{\tikz{\path[fill=bar1] (0,0) rectangle (1em,1em);}}
++tiling
+\hspace{2em}
+\raisebox{-0.2em}{\tikz{\path[fill=bar2] (0,0) rectangle (1em,1em);}}
++tiling+metapipelining
+}
+
+\caption{Speedups and resource usages, relative to respective baseline designs, resulting from tiling and metapipelining.}
+\label{fig:speedup-bars}
+\end{figure}
+
 \paragraph{Impact of tiling alone}
-Figure \ref{fig:speedup-bars} shows the obtained speedups as well as relative on-chip resource utilizations for each of benchmarks.
+Figure \ref{fig:speedup-bars} shows the obtained speedups as well as relative on-chip resource utilizations for each of the benchmarks.
 As can be seen, most benchmarks in our suite show significant speedup when tiling
 transformations are enabled. Benchmarks like \emph{sumrows} and \emph{gemm}
 benefit from inherent locality in their memory accesses. For \emph{gemm}, our automatically generated code

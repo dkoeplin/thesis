@@ -1,32 +1,26 @@
 \section{Hardware Generation}
 \label{hardware}
 
-In this section, we describe how the tiled intermediate representation is translated into an efficient FPGA design.
-FPGAs are composed of various logic, register, and memory resources.
-These resources are typically configured for a specific hardware design using a hardware description language (HDL) that is translated into an FPGA configuration file.
-Our approach to FPGA hardware generation translates our parallel pattern IR into MaxJ, a Java-based hardware generation language (HGL), which is in turn used to generate an HDL.
-This is simpler than generating HDL directly because MaxJ performs tasks such as automatic pipelining of innermost loops and other low-level hardware optimizations.
+In this section, we describe how the tiled intermediate representation is
+translated into an efficient FPGA design. FPGAs are composed of various logic,
+register, and memory resources. These resources are typically configured for
+a specific hardware design using a hardware description language (HDL)
+that is translated into an FPGA configuration file.
 
-%In this section, we describe how the tiled intermediate representation is translated into efficient hardware.
-%FPGAs are composed of various resources
-%Programming FPGAs is typically done with a hardware description language, which is translated into a netlist
+To separate concerns of this chapter from the subsequent chapter on Spatial,
+and to define a ground set of templates required for Spatial's design,
+we describe our approach to FPGA hardware generation here as generation rules
+from PPL into a simple set of hardware templates. We describe how
+these templates can be further refined
+into a full hardware-specific intermediate representation in Chapter~\ref{spatial}.
 
-%Hardware generation uses a template-based approach to translate our parallel pattern IR into MaxJ HDL.
+\input{3-delite/figs/hwtemplates}
 
-%Our approach targets architectures conforming to an abstract machine model where there is a large amount of off-chip slow memory connected to
-%on-chip resources via one or more channels, limited amount of on-chip scratchpad memory, some
-%compute resources, and the ability to synthesize multiple hierarchical Finite State Machines with Datapaths (FSMDs).
-
-%%% Hardware templates here to make it at the top of the hardware gen page
-
-
-\input{figs/hwtemplates}
-
-Hardware generation follows a template-based approach. We analyze the structure of the parallel
-patterns in the IR to determine the correct template to translate the pattern
-to hardware. Table~\ref{t-hwtemplates} lists the templates and their corresponding IR constructs in three classes: memories, pipelined execution units,
-and state machine controllers. \emph{Buffer}, \emph{Double buffer}, and \emph{Cache} are different on-chip memory
-templates intended to capture both regular and data-dependent access patterns. In particular, the \emph{double buffer} template
+Table~\ref{t-hwtemplates} lists the templates and their corresponding PPL IR
+constructs in three classes: memories, pipelined execution units,
+and state machine controllers. \emph{Buffer}, \emph{Double buffer},
+and \emph{Cache} are different on-chip memory templates intended to capture both
+regular and data-dependent access patterns. In particular, the \emph{double buffer} template
 is used to decouple execution stages and support dynamic rate mismatch between producer and consumer stages. Templates labeled as
 \emph{Pipelined Execution Units} are used to support different kinds of innermost parallel patterns, as described in Table~\ref{t-hwtemplates}.
 The \emph{Controller} templates implement a specific form of control flow using asynchronous handshaking signals. The \emph{Sequential},
@@ -44,7 +38,7 @@ We next describe the key features in the IR which we use to infer each of these 
 
 
 %\subsection{Memory Allocation}
-\paragraph{Memory Allocation}
+\subsection{Memory Allocation}
 Generating efficient FPGA hardware requires effective usage of on-chip memories (buffers).
 Prior to generating MaxJ, we run an analysis pass to allocate buffers for arrays based on data access patterns and size.
 %Since the maximum size of data inputs can not usually be inferred statically, we support the use of programmer hints about tile sizes to aid this analysis.
@@ -84,7 +78,7 @@ to instantiate a template with the appropriate word width and number of ports.
 
 
 %\subsection{Pipeline Execution Units}
-\paragraph{Pipeline Execution Units}
+\subsection{Pipeline Execution Units}
 We generate parallelized and pipelined hardware when parallel patterns compute with scalar values,
 as occurs for the innermost patterns.
 We implemented templates for each
@@ -99,7 +93,7 @@ array of scalar values, which is automatically pipelined by the MaxJ compiler.
 
 
 %\subsection{Metapipelining}
-\paragraph{Metapipelining}
+\subsection{Metapipelining}
 To generate high performance hardware from parallel patterns, it is insufficient to exploit only a single level of parallelism.
 However, exploiting nested parallelism requires mechanisms to orchestrate
 the flow of data through multiple pipeline stages while also exploiting parallelism at each stage of execution,
@@ -115,8 +109,10 @@ This is in contrast to traditional HLS tools which require inner patterns to hav
 
 %\todo{Introduce... Implementing a parallel pattern as a metapipeline involves multiple steps, as described below:}
 
-\begin{figure*} \centering\includegraphics[clip=true,width=7in,trim=0in 0in
-0in 0in]{figs/amazingmetapipelining.pdf}\caption{Hardware generated for the $k$-means application.}
+\begin{figure*}
+\centering
+\includegraphics[width=6in]{3-delite/figs/kmeans-blockdiagram.pdf}
+\caption{Block diagram of hardware generated for the $k$-means application.}
 \label{fig:metapipelining}
 \end{figure*}
 
@@ -137,17 +133,20 @@ Once we have a final schedule for the metapipeline, we promote every output buff
 to a double buffer to avoid write after read (WAR) hazards between metapipeline stages.
 
 
-\paragraph{Example}
+\subsection{Example}
 Figure~\ref{fig:metapipelining} shows a block diagram of the hardware generated for the $k$-means application.
 For simplicity, this diagram shows the case where the \emph{centroids} array completely fits on-chip, meaning
 we do not tile either the number of clusters \emph{k} or the number of features \emph{d}.
-The generated hardware contains three sequential steps. The first step (Pipe~0) preloads the entire \emph{centroids} array into a buffer.
+The generated hardware contains three sequential steps.
+
+The first step (Pipe~0) preloads the entire \emph{centroids} array into a buffer.
 The second step (Metapipeline A) is a metapipeline which consists of three stages with double buffers to manage communication between the stages.
 These three stages directly correspond to the three main sections of the MultiFold (Figure~\ref{fig:kmeans-fused}, line~5) used to sum and count the input points as grouped by their
 closest centroid. The first stage (Pipe~1) loads a tile of the \emph{points} array onto the FPGA. Note that this stage is double buffered to
 enable hardware prefetching. The second stage (Pipe~2) computes the index of the closest centroid using vector compute blocks and a scalar reduction
 tree. The third stage (Pipe~3 and Pipe~4) increments the count for this minimum index and adds the current point to the corresponding location in the
 buffer allocated for the \emph{new centroids}.
+
 The third step (Metapipeline B) corresponds with the second outermost parallel pattern in the $k$-means application.
 This step streams through the point sums and the centroid counts, dividing each sum by its corresponding count. The resulting new centroids
 are then written back to main memory using a tile store unit for further use on the CPU.
@@ -156,13 +155,3 @@ Our automatically generated hardware design for the core computation of $k$-mean
 While the manual implementation assumes a fixed number of clusters and a small input dataset which can be preloaded onto the FPGA, we use tiling to automatically generate
 buffers and tile load units to handle arbitrarily sized data. Like the manual implementation, we automatically parallelize across centroids
 and vectorize the point distance calculations. As we see from the $k$-means example, our approach enables us to automatically generate high quality hardware implementations which are comparable to manual designs.
-
-%Each of the pipes \todo{Complete kmeans example}
-
-    %This is required so that when a pattern produces an output in one stage, a pattern in the
-    %subsequent stage can safely and correctly read and operate on the produced data.
-%\subsubsection{Controller Instantiation}
-%    With the information from scheduling and optimization steps, we can instantiate a controller with
-%    handshake signals to control the execution of each of its stages. At this time we also instantiate
-%    intermediate double-buffered register files between each stage to propagate state information
-%    such as iterator count, scalar values and other control signal information.

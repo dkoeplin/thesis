@@ -181,7 +181,6 @@ newCentroids = map(k,d){ (i,j) =>
 \label{fig:kmeans-fused}
 \end{figure}
 
-\paragraph{Example}
 Now that we have defined the parallel pattern operations, we will use them to
 implement example k-means clustering application.
 For reference, first consider $k$-means implemented using the standard Scala
@@ -201,3 +200,8 @@ For simplicity, we have also converted the nested arrays in the Scala example to
 This translation requires the insertion of \emph{slice} operations in certain locations, which produce a view of a subset of the underlying data.
 For the remainder of this work, we will assume the existence of a parallel pattern backend
 for high level DSLs of interest and always start from the parallel pattern intermediate representation.
+
+% \section{Field Programmable Gate Arrays}
+%
+% While this work will not attempt to give a comprehenesive description about how
+% FPGAs are used or how they work, we will provide a short background

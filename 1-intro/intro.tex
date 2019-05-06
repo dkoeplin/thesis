@@ -177,17 +177,21 @@ context of our larger framework targeting FPGAs.
 The system proposed in this work was developed in part on top of work done by
 the Delite team within the Pervasive Parallelism Lab at Stanford University.
 While the Spatial compiler is a novel implementation begun with this work, it
-is inspired heavily by prior Delite and DSL compiler work. Hassan Chafi~\cite{hassan-thesis} and
+is inspired heavily by prior Delite and DSL compiler work.
+The core of Spatial's IR and compiler,
+dubbed ``Argon'', began as a customized rewrite of Lightweight Modular Staging
+by Tiark Rompf, et. al.~\cite{tiark-thesis,lms} with additional consideration for managing
+compiler metadata and \todo{???}.
+Hassan Chafi~\cite{hassan-thesis} and
 Arvind Sujeeth~\cite{arvind-thesis} showed the expressitivity benefits of
 parallel-pattern based DSLs across a wide variety of domains.
 Kevin Brown~\cite{kevin-thesis}
 showed the performance benefits of parallel pattern
 could be extended across multi-core and cluster CPUs, while
 HyoukJoong Lee showed that the same approach can be used to target GPUs
-and FPGAs~\cite{hj-thesis}. The core of Spatial's IR and compiler,
-dubbed ``Argon'', began as a customized rewrite of Lightweight Modular Staging
-by Tiark Rompf, et. al.~\cite{tiark-thesis,lms} with additional consideration for managing
-compiler metadata and \todo{???}.
+and FPGAs~\cite{hj-thesis}. While the focus of this work is on targeting FPGAs,
+Raghu Prabhakar~\cite{raghu-thesis} has shown how the same framework can be
+extended to target custom CGRAs.
 
 The key contribution of this work is the proposal and demonstration of a system
 which generates efficient, performant hardware accelerator designs

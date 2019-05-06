@@ -4,6 +4,7 @@
 {\begin{lstlisting}
 (sums,counts) = multiFold(n/b0)((k,d),k)(...){ii =>
 (*@\color{vbgray}{\vrule}@*)  pt1Tile = points.copy(b0 + ii, *)
+(*@\color{vbgray}{\vrule}@*)
 (*@\color{vbgray}{\vrule}@*)  multiFold(b0)((k,d),k)(zeros(1,d),0){ i =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  pt1 = pt1Tile.slice(i, *)
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  minDistWithIndex = multiFold(k/b1)(1)((max, -1)){ jj =>
@@ -14,8 +15,10 @@
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  acc => if (acc._1 < dist) acc else (dist, j+jj)
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }{ (a,b) => if (a._1 < b._1) a else b }
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)
-(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (0, acc =>
-(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    if (acc._1 < minIndTile._1) acc else minIndTile)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (0, {acc =>
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    if (acc._1 < minIndTile._1) acc
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    else minIndTile
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  })
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }{(a,b) =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    if (a._1 < b._1) a else b
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }
@@ -28,13 +31,6 @@
 (*@\color{vbgray}{\vrule}@*)  }{(a,b) => ... /* Tiled combination function */ }
 (*@\color{vbgray}{\vrule}@*)  (0, acc => ... /* Tiled combination function */ )
 }{(a,b) => ... /* Tiled combination function */ }
-
-newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
-(*@\color{vbgray}{\vrule}@*)  sumsBlk = sums.copy(b1 + ii, *)
-(*@\color{vbgray}{\vrule}@*)  countsBlk = counts.copy(b1 + ii)
-(*@\color{vbgray}{\vrule}@*)  (ii, acc => map(k,d){ (i,j) =>
-(*@\color{vbgray}{\vrule}@*)    sumsBlk(i,j) / countsBlk(i)
-(*@\color{vbgray}{\vrule}@*)  })
 }
 \end{lstlisting}} & \hfill &
 %\end{minipage} \hfill
@@ -42,7 +38,8 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
 {\begin{lstlisting}
 (sums,counts) = multiFold(n/b0)((k,d),k)(...){ ii =>
 (*@\color{vbgray}{\vrule}@*)  pt1Tile = points.copy(b0 + ii, *)
-(*@\color{vbgray}{\vrule}@*)  minDistWithInds = multiFold(k/b1)(b1)(map(b1)((max, -1))){ jj =>
+(*@\color{vbgray}{\vrule}@*)  minDistWithInds =
+(*@\color{vbgray}{\vrule}@*)    multiFold(k/b1)(b1)(map(b1)((max, -1))){ jj =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  pt2Tile = centroids.copy(b1 + jj, *)
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  minIndsTile = map(b0){ i =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  pt1 = pt1Tile.slice(i, *)
@@ -53,7 +50,9 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }{ (a,b) => if (a._1 < b._1) a else b }
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  }
 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (0, acc => map(b0){ i =>
-(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    if (acc(i)._1 < minIndsTile(i)._1) acc else minIndsTile(i) })
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    if (acc(i)._1 < minIndsTile(i)._1) acc
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)    else minIndsTile(i)
+(*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  })
 (*@\color{vbgray}{\vrule}@*)  }{(a,b) =>
 (*@\color{vbgray}{\vrule}@*)    map(b0){i => if (a(i)._1 < b(i)._1) a(i) else b(i) }
 (*@\color{vbgray}{\vrule}@*)  }
@@ -66,20 +65,13 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
 (*@\color{vbgray}{\vrule}@*)  }{(a,b) => ... /* Tiled combination function */ }
 (*@\color{vbgray}{\vrule}@*)  (0, acc => ... /* Tiled combination function */ )
 }{(a,b) => ... /* Tiled combination function */ }
-
-newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
-(*@\color{vbgray}{\vrule}@*)  sumsBlk = sums.copy(b1 + ii, *)
-(*@\color{vbgray}{\vrule}@*)  countsBlk = counts.copy(b1 + ii)
-(*@\color{vbgray}{\vrule}@*)  (ii, acc => map(k,d){ (i,j) =>
-(*@\color{vbgray}{\vrule}@*)    sumsBlk(i,j) / countsBlk(i)
-(*@\color{vbgray}{\vrule}@*)  })
 }
 \end{lstlisting}}
 \end{tabular}
 
 \vspace{-0.2in}\begin{tabular}{cc}
-{\parbox{0.45\textwidth}{\centering{(a) Strip mined $k$-means in PPL.}}} &
-{\parbox{0.5\textwidth}{\centering{(b) Pattern Interchanged $k$-means in PPL.}}}
+{\parbox{0.45\textwidth}{\centering{a. Strip mined $k$-means in PPL.}}} &
+{\parbox{0.5\textwidth}{\centering{b. Pattern interchanged $k$-means in PPL.}}}
 \end{tabular}
 
 %\vspace{-0.045\textwidth}
@@ -105,12 +97,6 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
       (*@\color{vbgray}{\vrule}@*)  End
 25-26 (*@\color{vbgray}{\vrule}@*)  Add point and count sums across tiles
       End
-
-28    For each tile of b1 point sums and counts:
-29    (*@\color{vbgray}{\vrule}@*)  Copy the point sums tile into local memory
-30    (*@\color{vbgray}{\vrule}@*)  Copy the point counts tile into local memory
-31-32 (*@\color{vbgray}{\vrule}@*)  Compute each new centroid as sums(i) / count(i)
-      End
 \end{lstlisting}} & \hfill &
 %\end{minipage} \hfill
 %\begin{minipage}[b]{.4\textwidth}
@@ -119,7 +105,7 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
 2     (*@\color{vbgray}{\vrule}@*)  Copy the points tile into local memory
 3     (*@\color{vbgray}{\vrule}@*)  (*@\color{red}{\textbf{For each tile of b1 centroids}}@*):
 4     (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  Copy the centroids tile into local memory
-5 - 6 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{blue}{\textbf{For each point \emph{pt1} in the points tile}}@*):
+5 - 6 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{blue}{\textbf{For~each~point~\emph{pt1}~in~the~points~tile:}}@*)
 7 - 8 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  For each centroid (*@\emph{pt2}@*) in the centroids tile:
 9     (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  Compute distance between (*@\emph{pt1}@*) and (*@\emph{pt2}@*)
 10-11 (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  (*@\color{vbgray}{\vrule}@*)  Keep the closest (index,distance) pair
@@ -135,19 +121,13 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
       (*@\color{vbgray}{\vrule}@*)  End
 25-26 (*@\color{vbgray}{\vrule}@*)  Add point and count sums across tiles
       End
-
-28    For each tile of b1 point sums and counts:
-29    (*@\color{vbgray}{\vrule}@*)  Copy the point sums tile into local memory
-30    (*@\color{vbgray}{\vrule}@*)  Copy the point counts tile into local memory
-31-32 (*@\color{vbgray}{\vrule}@*)  Compute each new centroid as sum / count
-      End
 \end{lstlisting}}
 \end{tabular}
 
 
 \vspace{-0.2in}\begin{tabular}{cc}
-{\parbox{0.45\textwidth}{\centering{(c) Pseudocode description of strip mined $k$-means.}}} &
-{\parbox{0.5\textwidth}{\centering{(d) Pseudocode description of pattern interchanged $k$-means.}}}
+{\parbox{0.45\textwidth}{\centering{c. Pseudocode description of strip mined $k$-means.}}} &
+{\parbox{0.5\textwidth}{\centering{d. Pseudocode description of pattern interchanged $k$-means.}}}
 \end{tabular}
 
 \vspace{0.1in}
@@ -155,7 +135,7 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
 
 \noalign{\hrule height 1.5pt}
 \multicolumn{1}{|c|}{} & \multicolumn{2}{c|}{\bf Fused} & \multicolumn{2}{c|}{\bf Strip Mined}  & \multicolumn{2}{c|}{\bf Interchanged} \\
-& Main Memory Reads & On-Chip Storage & Main Memory Reads & On-Chip Storage & Main Memory Reads & On-Chip Storage \\ \hline
+& DRAM Reads & Local Size & DRAM Reads & Local Size & DRAM Reads & Local Size \\ \hline
 \emph{points} & $n \times d$ & $d$ & $n \times d$ & $b_0 \times d$ & $n \times d$ & $b_0 \times d$ \\ \hline
 \emph{centroids} & $n \times k \times d$ & $d$ & $n \times k \times d$ & $b_1 \times d$ & $(n/b_0) \times k \times d$ & $b_1 \times d$ \\ \hline
 \emph{minDistWithIndex} & $0$ & $2$ & $0$ & $2$ & $0$ & $2 \times b_0$ \\
@@ -163,4 +143,4 @@ newCentroids = multiFold(k/b1,d)(k,d)(...){ (ii,jj) =>
 \end{tabular}}
 
 \small
-\vspace{0.1in}\centering{(e) Minimum number of words read from main memory and on-chip storage for data structures within $k$-means clustering after each IR transformation.}
+\vspace{0.1in}\centering{(e) Minimum number of words read from DRAM (main memory) and on-chip storage for data structures within $k$-means clustering after each IR transformation.}
