@@ -1,5 +1,4 @@
-Like so many systems projects, the work in this thesis would not have been
-possible without the help of
+The work in this dissertation would not have been possible without the help of
 a great number of people. First and foremost, my advisor Kunle Olukotun.
 Kunle's role in my PhD career and in this project can perhaps be summarized by
 our first interaction together in my first week at Stanford.
@@ -7,24 +6,33 @@ After I described my research interests in
 machine learning and reconfigurable computing, Kunle suggested that I review recent
 work in the area to see if we might think of a way to do something better.
 ``Or different,'' I suggested, to which he quickly responded ``let's stick
-with better.''  Ever since then, Kunle been the guiding force helping me and this
-project move forward and stay out of the weeds.
+with better.''  Ever since then, Kunle has been the guiding force helping me and this
+project move forward and stay out of the weeds. While I initially joined Stanford
+because of Kunle's impact and reputation in hardware architecture, working with him
+has also introduced me to the magic of compilers and programming language design.
+Due to his influence, this thesis, and my experience as an engineer, is a
+happy combination of all three.
 
-Key components of this work were the result of long discussions and even longer
+Key components of this work are thanks in part to long discussions and even longer
 working hours by various members of the Pervasive Parallelism Lab.
-Every part of this thesis was joint work with Raghu Prabhakar, who joined PPL
-at the same time that I did. In addition to his own thesis work on the Plasticine
-architecture, Raghu was instrumental in the compiler's
-first code generator, got me addicted to coffee,
-and repeatedly made me cringe at his terrible jokes.
+Every part of this thesis was collaborative work with Raghu Prabhakar.
+Raghu has become a great friend and coworker since we first joined PPL. Many of
+the ideas in this work came from insights during our design discussions.
+Aside from our research together, Raghu is also responsible for my
+coffee addiction and strong distaste for bad computer science puns, neither of
+which I will ever forgive him for.
+
 I'd also like to thank Matt Feldman, who we forced to become an expert in Chisel
-because both Raghu and I got tired of writing RTL,
+after both Raghu and I got tired of writing RTL,
 and who tried but ultimately failed to teach me how to juggle.
-For all my work in the compiler's guts, Raghu and Matt have been largely
+For all my work in the compiler's guts, Matt has been largely
 responsible for Spatial's code generator backends, without which the
 compiler really wouldn't be much of a compiler at all.
-It was also great working with Yaqi Zhang, Tian Zhao, Stefan Hadjis, Matt Vilim,
-and Chris Aberger over the years.
+Yaqi Zhang was instrumental in many compiler design decisions, especially those
+pertaining to our Plasticine architecture.
+It was also a great pleasure working with Tian Zhao, Stefan Hadjis, Matt Vilim,
+Ruben Fiszel, Luigi Nardi, Ardavan Pedram, Chris Aberger, Nathan Zhang,
+Tushar Swamy, and Alex Rucker in Kunle's group over the years.
 
 I received a lot of excellent early insights into this project from my senior
 colleagues in the PPL group, including Arvind Sujeeth, Kevin Brown, HyoukJoong
@@ -34,10 +42,15 @@ Scala and parallel patterns, both of which I have since grown to (mostly) love.
 I have also had extremely helpful discussions on the design of Spatial
 with a multitude of other people, including (but certainly not limited to)
 Professor Christos Kozyrakis, Professor Kayvon Fatahalian, Professor Mark Horowitz,
-Luigi Nardi, Ardavan Pedram, Ruben Fiszel, Nathan Zhang, Alex Rucker, and
-numerous other members of the DAWN research group too numerous to list.
+and numerous other members of the DAWN research group too numerous to list.
 
+I also thank my parents, my brother, and my sister. They never had any
+clue what I was talking about, but they listened to my practice presentations
+nonetheless and have been incredibly supportive during my time at Stanford and,
+frankly, throughout my life in general. I would not be where I am today without
+their love and support. I also thank my girlfriend Caitie, who has helped me
+make the last several years of my PhD far less stressful and far more enjoyable.
 
-Lastly, I should thank all of my coworkers at SambaNova Systems. Our time
+Lastly, I thank all of my coworkers at SambaNova. Our time
 together so far has been wonderful and I am greatly looking forward to what
 the future will have to offer us (and, of course, vice versa).

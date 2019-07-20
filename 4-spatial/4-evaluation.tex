@@ -1,5 +1,5 @@
 \section{Evaluation}
-\label{evaluation}
+\label{spatial-evaluation}
 
 In this section, we evaluate Spatial by comparing programmer productivity and the performance of generated designs to Xilinx's commercial HLS tool, SDAccel. We then evaluate the HyperMapper design tuning approach and demonstrate Spatial's advantages for portability across FPGAs and the Plasticine CGRA.
 
@@ -17,7 +17,7 @@ Spatial achieves speedups over SDAccel of $1.63\times$ and $1.33\times$ respecti
 stream data from DRAM through a deeply pipelined datapath which is amenable to FPGA acceleration. Dataflow support in SDAccel using the DATAFLOW pragma~\cite{dataflowRef} and streaming support in Spatial allows both tools to efficiently accelerate such workloads. In \emph{K-Means}, coarse-grained pipelining support allows Spatial to achieve roughly the same performance as SDAccel using $1.5\times$ fewer BRAMs.
 Specialized DRAM scatter/gather support enables Spatial to achieve a $3.48\times$ speedup on \emph{PageRank}.
 
-We see speedups of $8.48\times$, $1.37\times$, and $14.15\times$ for compute-heavy workloads \emph{GDA}, \emph{GEMM}, and \emph{SW}, respectively. The baseline for \emph{SW} is implemented by Xilinx as a systolic array, while the Spatial implementation uses nested controllers. \emph{GEMM} and \emph{GDA} contain opportunities for coarse-grained pipelining that are exploited within Spatial. 
+We see speedups of $8.48\times$, $1.37\times$, and $14.15\times$ for compute-heavy workloads \emph{GDA}, \emph{GEMM}, and \emph{SW}, respectively. The baseline for \emph{SW} is implemented by Xilinx as a systolic array, while the Spatial implementation uses nested controllers. \emph{GEMM} and \emph{GDA} contain opportunities for coarse-grained pipelining that are exploited within Spatial.
 GDA, for example, contains an outer product operation, during which the data in the same buffer is repeatedly accessed and reused. While this operation can be pipelined with a preceding loop producing the array, SDAccel's DATAFLOW pragma does not support such access patterns that involve reuse. As a result, SDAccel requires larger array partitioning and loop unrolling factors to offset the performance impact, at the expense of consuming more FPGA BRAM.
 In addition, nested controllers in \emph{GEMM}
 can be parallelized and pipelined independently in Spatial, while SDAccel automatically unrolls all inner loops if an outer loop is parallelized. Spatial can therefore explore
@@ -253,7 +253,7 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
 % \begin{tabular}{llrrrrr}
 %                       & \multicolumn{2}{c}{\textbf{Space Size}} & \multicolumn{2}{c}{\textbf{Heuristic}} & \multicolumn{2}{c}{\textbf{HyperMapper}} \\
 %                       & \mc{Total} & \mc{Pruned}    & \mc{Time} & \mc{Var}  &   \mc{Time} & \mc{Var} \\ \midrule
-%   %\bf{Dot Product}   & 117,964,800      & 1,085,952            &              &                &                &               \\ \midrule  
+%   %\bf{Dot Product}   & 117,964,800      & 1,085,952            &              &                &                &               \\ \midrule
 %   %\bf{Outer Product} & 16,588,800       & 31,068               &              &                &                &               \\ \midrule
 %   \bf{BS}             & 7.7$\times 10^4$  & 6.7$\times 10^2$    &              &                &                &               \\ \midrule
 %   \bf{GDA}            & 3.0$\times 10^{10}$ & 4.6$\times 10^6$  &              &                &                &               \\ \midrule
@@ -275,7 +275,7 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
 \centering
 \fontsize{7}{9}\selectfont
 \begin{tabular}{l d{2.1} d{2.1} d{2.1} d{2.1} d{2.1} d{2.1}}
-   \bf{FPGA}      & \mc{ZC706}  & \multicolumn{4}{c}{\bf VU9P}                                       & \mc{Total}     \\ 
+   \bf{FPGA}      & \mc{ZC706}  & \multicolumn{4}{c}{\bf VU9P}                                       & \mc{Total}     \\
    \bf{Design}    & \mc{Tuned}  & \multicolumn{2}{c}{\bf Ported}   & \multicolumn{2}{c}{\bf Tuned}    &               \\ \toprule
 
                   & \mc{Time}   & \mc{Time}  & \mc{$\times$}       & \mc{Time}  & \mc{$\times$}       & \mc{$\times$} \\ \midrule
@@ -286,7 +286,7 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
    \ml{PageRank}  & 1299.5      & 1003.3     & 1.3                 & 587.4      & 1.7                 & 2.2           \\ \midrule
    \ml{SW$^\dag$} & 1.3         &  0.5       & 2.5                 & 0.5        & 1.0                 & 2.5           \\ \midrule
    \ml{TQ6}       & 69.4        & 15.0       & 4.6                 & 14.0       & 1.1                 & 5.0           \\ \bottomrule
-   
+
    \multicolumn{7}{l}{\vspace{10pt}\footnotesize{ $^\dag$SW with 160 base pairs, the largest to fit on the ZC706.}}
 \end{tabular}
 \vspace{-10pt}
@@ -295,12 +295,12 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
 We next demonstrate the portability of Spatial code by targeting two different FPGA architectures; (1) the Zynq ZC706 SoC board, and (2) The Virtex Ultrascale+ VU9P on the Amazon EC2 F1.
 Designs on the VU9P use a single DRAM channel with a peak bandwidth of 19.2 GB/s. The ZC706 is much smaller than the VU9P in terms of FPGA resource and has a smaller DRAM bandwidth of 4.26 GB/s.
 We target both the ZC706 and VU9P from the same Spatial code for all benchmarks listed in Table~\ref{t:hls_comp}. Benchmarks are tuned for each target using
-target-specific models with automated DSE. Clock frequency is fixed at 125 MHz for both FPGAs. 
+target-specific models with automated DSE. Clock frequency is fixed at 125 MHz for both FPGAs.
 
 Table~\ref{fig:zynq_comp} shows the speedups achieved on the VU9P over the ZC706. The results show that not only can the same Spatial source code be ported
 to architectures with different capabilities, the application can also be automatically tuned to better take advantage of resources in each target.
-Compute-bound benchmarks \emph{BlackScholes}, \emph{GDA}, \emph{GEMM}, \emph{K-Means} achieve speedups of up to $23\times$ on the VU9P over the ZC706. Porting these designs to the VU9P alone has a $1.2\times$ to $2.5\times$ due to increased main memory bandwidth, but a majority of the benefit of the larger FPGA comes from tuning the parallelization factors to use more resources. 
-While \emph{SW} is also compute bound, the size of the dataset was limited by the smaller FPGA. In this case, the larger capacity of the VU9P does not improve runtime, but instead allows handling of larger datasets. 
+Compute-bound benchmarks \emph{BlackScholes}, \emph{GDA}, \emph{GEMM}, \emph{K-Means} achieve speedups of up to $23\times$ on the VU9P over the ZC706. Porting these designs to the VU9P alone has a $1.2\times$ to $2.5\times$ due to increased main memory bandwidth, but a majority of the benefit of the larger FPGA comes from tuning the parallelization factors to use more resources.
+While \emph{SW} is also compute bound, the size of the dataset was limited by the smaller FPGA. In this case, the larger capacity of the VU9P does not improve runtime, but instead allows handling of larger datasets.
 
 Memory-bound benchmark \emph{TPC-H Q6} benefits from the higher DRAM bandwidth available on the VU9P. Porting this benchmark immediately gives a $4.6\times$ runtime improvement from the larger main memory bandwidth, while further parallelizing controllers to create more parallel address streams to DRAM helps the application make better use of this bandwidth. \emph{PageRank} is also bandwidth-bound, but the primary benefit on the VU9P comes from specializing the memory controller to maximize utilized bandwidth for sparse accesses.
 
@@ -310,7 +310,7 @@ Memory-bound benchmark \emph{TPC-H Q6} benefits from the higher DRAM bandwidth a
 % \label{fig:zynq_comp}
 
 % \fontsize{8}{10}\selectfont
-% \begin{tabular}{cccccc} 
+% \begin{tabular}{cccccc}
 % \bf{GDA}     & \bf{GEMM}    & \bf{K-Means} & \bf{PageRank} & \bf{SW}      & \bf{TQ6} \\ \hline
 % 2.54$\times$ & 2.53$\times$ & 1.84$\times$ & 2.21$\times$  & 1.74$\times$ & 4.97$\times$  \\ \hline
 % \end{tabular}
@@ -360,13 +360,13 @@ Table~\ref{table:plasticine_eval} shows the DRAM bandwidth, resource utilization
 Streaming, bandwidth-bound applications like \emph{TPC-H Q6} efficiently exploit about 97\% of the available DRAM bandwidth.
 Compute-bound applications \emph{GDA}, \emph{GEMM}, and \emph{K-Means} use around 90\% of Plasticine's compute tiles.
 Plasticine's higher on-chip bandwidth also allows these applications to better utilize the compute resources, giving these applications speedups of $9.9\times$, $55.0\times$, and $6.3\times$.
-Similarly, the deep compute pipeline in \emph{BlackScholes} occupies 73.4\% of compute resources after being split across multiple tiles, 
-giving a speedup of $1.6\times$. 
+Similarly, the deep compute pipeline in \emph{BlackScholes} occupies 73.4\% of compute resources after being split across multiple tiles,
+giving a speedup of $1.6\times$.
 
 %We implemented comparable versions of each of our benchmarks in C++ and synthesized them
 %using HLS and SDAccel tools.  There are certain constructs in Spatial that allow
 %certain algorithms to be expressed more concisely and in slightly different, but intuitive, ways that
-%expose the strengths of the language.  Each application exhibits certain characteristics which 
+%expose the strengths of the language.  Each application exhibits certain characteristics which
 %can be exploited by certain aspects in the programming paradigms of Spatial and HLS. Specifically,
 %they can be characterized as compute-bound applications and memory-bound applications, with some
 %tradeoff between the two depending on design decisions.  While HLS is the industry standard for
@@ -376,7 +376,7 @@ giving a speedup of $1.6\times$.
 %Spatial is a suitable platform for the designer who is interested in making the most of the
 %available resources, as it allows quick design tradeoffs in the app without needing to use complex pragmas throughout the app.
 %In applications that are memory bound, such as AES, BlackScholes, and Sobel, we would expect that neither
-%design could acheive significantly better speedup since they have access to the same DRAM interfaces.  
+%design could acheive significantly better speedup since they have access to the same DRAM interfaces.
 %For compute-bound applications, such as Kmeans, GEMM, and GDA, there is a large, interesting design space that
 %Spatial can quickly expose to the user.
 
@@ -396,7 +396,7 @@ giving a speedup of $1.6\times$.
 % Similar to the FPGA, we construct area and runtime models specific to Plasticine, and drive the design space exploration to tune
 % benchmarks to Plasticine. Compiling to Plasticine then involves lowering the Spatial IR to a target-specific IR for the Plasticine low-level mapping compiler,
 % which outputs a configuration bitstream. Resource utilization reports are obtained from the low-level compiler.
-% Execution times are measured by simulating the generated bitstream in a cycle-accurate fashion at a clock frequency of 1 GHz. 
+% Execution times are measured by simulating the generated bitstream in a cycle-accurate fashion at a clock frequency of 1 GHz.
 
 
 
@@ -405,8 +405,8 @@ giving a speedup of $1.6\times$.
 %compute unit utilization. Hence, the best performing design point shown in
 %Table~\ref{table:plasticine_eval} does not correspond to the design with 100\% compute utilization.
 
-%Therefore, the given architecture cannot fit unrolling the outer loop by more than 1 without 
-%exceeding 100\% PCU utilization. 
+%Therefore, the given architecture cannot fit unrolling the outer loop by more than 1 without
+%exceeding 100\% PCU utilization.
 %\todo{K-Means is a sequential iterative convergence algorithm that neither outer loop nor
 %inner loop that computes the new centroids can be parallelized.} As a result, we could not maximize
 %either bandwidth or resource.}
@@ -416,9 +416,9 @@ giving a speedup of $1.6\times$.
 %speedup compared to F1 due to its higher clock frequency.
 
 %Figure~\ref{fig:gemm_dse} shows the design space of GEMM on Plasticine. The bottom edged circles are
-%designs with large tile size that better capture locality. The dark large circles on the right are 
+%designs with large tile size that better capture locality. The dark large circles on the right are
 %designs with good PCU and PMU utilization, and high DRAM load bandwidth as result of outer loop
-%unrolling. 
+%unrolling.
 
 
 
