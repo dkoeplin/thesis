@@ -5,10 +5,10 @@
 \newsavebox{\MapHLL}
 \begin{lrbox}{\MapHLL}
 \begin{lstlisting}[language=PPLTable]
-// Vector of size s multiplied by 2
+// Vector multiplied by 2
 vector * 2
 
-// Addition of two size s vectors
+// Addition of two vectors
 vectorA + vectorB
 \end{lstlisting}
 \end{lrbox}
@@ -70,7 +70,7 @@ MultiFold(s,t)(r)(zeros(s))
 \newsavebox{\FlatMapHLL}
 \begin{lrbox}{\FlatMapHLL}
 \begin{lstlisting}[language=PPLTable]
-// Filter non-zeros from s elements
+// Filter positive values
 SELECT * FROM vector
   WHERE elem >= 0
 
@@ -91,7 +91,7 @@ FlatMap(s){ i =>
 \newsavebox{\GroupByFoldHLL}
 \begin{lrbox}{\GroupByFoldHLL}
 \begin{lstlisting}[language=PPLTable]
-// Histogram with bin width 10
+// Histogram, bin width 10
 x.groupByFold(0){ e =>
   (e/10, 1)
 }{ (a,b) => a + b }
@@ -108,6 +108,7 @@ GroupByFold(s)(0){ i =>
 \end{lstlisting}
 \end{lrbox}
 
+\resizebox{\textwidth}{!}{
 \begin{tabular}{lll}
 \textbf{Visual Example} & \textbf{DSL Example} & \textbf{PPL Representation} \\
 \hline\hline
@@ -159,6 +160,7 @@ GroupByFold(s)(0){ i =>
 & \usebox{\GroupByFoldHLL}
 & \usebox{\GroupByFoldPPL} \\
 \end{tabular}
+} %% end resizebox
 
 \caption{\label{fig:ppl-examples}Usage examples for patterns in the PPL from various domain-specific languages.}
 \end{figure*}

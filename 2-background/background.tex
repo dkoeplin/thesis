@@ -10,9 +10,9 @@ the number of operations and types of data structures in a domain-specific langu
 are generally limited. The benefit of this is that the language's compiler is
 generally aware of each of these operations and able to specialize and optimize them.
 Some domain-specific languages are standalone, including a full compiler with standard language
-lexing, parsing, and type checking, others are embedded in a host general purpose language,
-levaraging the existing language's compiler infrastructure while also
-adding additional functionality. In this case, the semantics of the embedded language
+lexing, parsing, and type checking. Others are embedded in a host general purpose language,
+leveraging the existing language's compiler infrastructure while also
+providing additional specialization or functionality. The semantics of the embedded language
 define how code written in the host language and DSL interact.
 
 For example, SQL is a standalone, declarative
@@ -31,10 +31,14 @@ which specializes in data-parallel operations on vectors and matrices.
 Its operator abstractions allow it to automatically parallelize ML applications.
 More recently, TensorFlow ~\cite{tensorflow} and PyTorch ~\cite{pytorch} are
 embedded DSLs in Python for defining machine learning computation graphs based on
-a limited set of operations on multi-dimensional arrays (``tensors'').
+a limited set of operations on multi-dimensional arrays (``tensors''). Both include
+notions of auto-gradient computation, making the computation required to
+train described graphs essentially implicit.
 
 In this work, we will look specifically at domain-specific languages in the domains under
 data analytics, with a particular focus on image processing and machine learning.
+We assume here that the target DSLs create an intermediate representation of the program
+which can be lowered to another form prior to execution.
 
 
 \section{Parallel Patterns}
@@ -65,8 +69,11 @@ do not allow nested tensors, only multidimensional tensors.
 $D$-dimensional tensor types are denoted as $V^D$, while tuples of $D$ values are
 denoted $V_D$. Note that this means a value of type $\mathbb{Z}_D$ can serve as a $D$-dimensional address
 for a tensor of type $V^D$.
-If no superscript or subscript is specified, the type is a 0-dimensional tensor ($V^0$) or, equivalently, a tuple of one element ($V_1$).
+If no superscript or subscript is specified, the type is a 0-dimensional tensor ($V^0$), or, equivalently, a tuple of one element ($V_1$).
 Both are equivalent to a scalar ($V = V_1 = V^0$).
+For the purposes of this description, multi-dimensional iteration domains are
+also denoted as tensors $V_D$. Note that in pratice, programmers would generally
+describe these domains using ranges (e.g. \texttt{0 until 10}) rather than a dense tensor.
 
 As shown in Figure~\ref{fig:ppl-syntax}, we separate PPL into two groups based on dimensionality.
 Figure~\ref{fig:ppl-syntax}a. lists the multi-dimensional patterns.
@@ -93,11 +100,15 @@ and \emph{zipWithIndex}.
 
 \emph{MultiFold} is a generalization of a \emph{fold} which reduces generated values into a specified region of a (potentially) larger accumulator using an associative combine function.
 The initial acummulator value $z$ is required to be an identity element of this function, and must have the same size and shape as the final output.
-The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator. Note that a traditional \emph{fold} is the special case of MultiFold where every generated value is the full size of the accumulator.
+The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator.
 Function $f$ then converts each index into a function that consumes the specified
 slice of the current accumulator and returns the new slice. If the pattern's
 implementation maintains multiple partial accumulators in parallel, the combine
 function $c$ reduces them into the final result.
+Note that a traditional \emph{reduce} and \emph{fold} patterns are the special
+case of MultiFold where every generated value is the full size of the accumulator.
+The additional complexity in MultiFold is to allow the expression of tiled
+parallel patterns as discussed further in Chapter~\ref{transformations}.
 
 \emph{FlatMap} generates an arbitrary number of values per index.
 These values are all concatenated into a flattened output.
@@ -107,10 +118,7 @@ Note that this primitive also easily expresses a \emph{filter}.
 
 \emph{GroupByFold} reduces generated values into one of many buckets where the bucket is selected by generating a key along with each value, i.e. it is a fused version of a \emph{groupBy} followed by a \emph{fold} over each bucket.
 The operation is similar to \emph{MultiFold} except that the key-space cannot be determined in advance and so the output size is unknown.
-Therefore we also restrict this operation to one-dimensional domains.
-
-
-
+We therefore also restrict this operation to one-dimensional domains.
 
 \begin{figure}
 \centering
@@ -181,11 +189,11 @@ newCentroids = map(k,d){ (i,j) =>
 \label{fig:kmeans-fused}
 \end{figure}
 
-Now that we have defined the parallel pattern operations, we will use them to
-implement example k-means clustering application.
+To provide a further example of the usage of parallel pattern operations, we will now use them to
+implement a simple k-means clustering application.
 For reference, first consider $k$-means implemented using the standard Scala
 collections operations, as shown in Figure~\ref{fig:kmeans}.
-$k$-means consumes a set of $n$ sample points of dimensionality $d$ and
+$k$-means consumes a set of $n$ sample points each of size $d$ and
 attempts to cluster those points by finding the $k$ best cluster centroids for the samples.
 This is achieved by iteratively refining the centroid values.
 (We show only one iteration in Figure~\ref{fig:kmeans} for simplicity.)
@@ -193,9 +201,12 @@ First, every sample point is assigned to the closest current centroid by
 computing the distance between every sample and every centroid.
 Then new centroid values are computed by averaging all the samples assigned to each centroid.
 This process repeats until the centroid values stop changing.
+
 Previous work~\cite{rompf12optimizing,brown16clusters,chambers10flumejava} has shown how to stage a DSL application like $k$-means, lowering it into a parallel pattern IR similar to the one we define here, as well as how to perform multiple parallel pattern fusion automatically on the IR.
 One of the most important of these optimizations is fusing patterns together, both vertically (to decrease the reuse distance between producer-consumer relationships) and horizontally (to eliminate redundant traversals over the same domain).
-Figure~\ref{fig:kmeans-fused} shows the structure of $k$-means after it has been lowered into PPL and pattern fusion rules~\cite{rompf12optimizing} have been applied.
+
+Figure~\ref{fig:kmeans-fused} shows the structure of $k$-means after it has been lowered into PPL and
+pattern fusion rules~\cite{rompf12optimizing} have been applied.
 For simplicity, we have also converted the nested arrays in the Scala example to multidimensional arrays.
 This translation requires the insertion of \emph{slice} operations in certain locations, which produce a view of a subset of the underlying data.
 For the remainder of this work, we will assume the existence of a parallel pattern backend

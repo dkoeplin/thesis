@@ -5,7 +5,7 @@
 \newsavebox{\Map}
 \begin{lrbox}{\Map}
 \begin{lstlisting}[language=PPLTable]
-Map(d){m}: V$_D$
+Map(d){m}: V$^D$
 \end{lstlisting}
 \end{lrbox}
 
@@ -13,7 +13,7 @@ Map(d){m}: V$_D$
 \newsavebox{\MultiFold}
 \begin{lrbox}{\MultiFold}
 \begin{lstlisting}[language=PPLTable]
-MultiFold(d)(r)(z){f}{c}: V$_R$
+MultiFold(d)(r)(z){f}{c}: V$^R$
 \end{lstlisting}
 \end{lrbox}
 
@@ -21,7 +21,7 @@ MultiFold(d)(r)(z){f}{c}: V$_R$
 \newsavebox{\FlatMap}
 \begin{lrbox}{\FlatMap}
 \begin{lstlisting}[language=PPLTable]
-FlatMap(d){n}: V$_1$
+FlatMap(d){n}: V$^1$
 \end{lstlisting}
 \end{lrbox}
 
@@ -31,7 +31,7 @@ FlatMap(d){n}: V$_1$
 \newsavebox{\GroupByFold}
 \begin{lrbox}{\GroupByFold}
 \begin{lstlisting}[language=PPLTable]
-GroupByFold(d)(z){g}{c}: (K,V)$_1$
+GroupByFold(d)(z){g}{c}: (K,V)$^1$
 \end{lstlisting}
 \end{lrbox}
 
@@ -95,5 +95,5 @@ Associative reduction of values over a 1-dimensional domain based on paired key 
 } \\
 \end{tabular}
 
-\caption{\label{fig:ppl-syntax}Definition of the patterns in the parallel pattern language (PPL). $V^D$ denotes a tensor with $D$ dimensions and elements of type $V$, while $V_D$ denotes a tuple of $D$ elements of type $V$.}
+\caption{\label{fig:ppl-syntax}Definition of the patterns in the parallel pattern language (PPL). $V^D$ denotes a tensor with $D$ dimensions and elements of type $V$, while $V_D$ denotes a tuple of $D$ elements of type $V$. Parentheses are used to denote simple value parameters while brackets denote functions.}
 \end{figure*}
