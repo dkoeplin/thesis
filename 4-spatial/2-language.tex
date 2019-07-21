@@ -17,38 +17,7 @@ Table~\ref{t:syntaxTable} provides an overview of a core subset of Spatial's syn
 %A higher level language targeted towards hardware accelerator design must strike the right balance
 %between high-level abstractions for improving programmer productivity and target-specific constructs for controlling hardware performance.
 
-%In this section, we discuss several of the key challenges in defining hardware accelerator designs and describe abstractions the Spatial language includes to place the burden of this complexity on the compiler rather than the application programmer.
-
 \input{4-spatial/figs/syntax}
-
-
-% Table~\ref{t:control} gives a summary of the control structures available in Spatial.
-
-%The host partition of Spatial supports a subset of constructs as Scala.  This part of the language is built
-%on previous work \todo{is it fair to claim it leverages Delite?} and produces efficient C++ code.  This portion is also responsible for
-%setting up the shared registers and memory structures that will be used to feed data and signals to the accelerator portion of the
-%application.  An example usage of this portion is parsing command line arguments and using them to populate memory and registers
-%accelerator arguments.
-
-%From the co-processor's point of view, the accelerator portion of the application is a function call, where any shared memory component
-%discussed in the next section can be accessed.
-
-
-%Spatial's programming model drastically simplifies hardware design through the use of templates for memories, nestable state machines structures, and host-device interactions.
-%using hierarchically nested state machines with their own parallelizations
-%to layout and perform computation.
-%In this section, we will discuss what the language looks like, why it is
-%provides a good user-facing representation for a dataflow language
-
-
-
-
-%By providing a wide range of compiler
-%optimizations, including rapid design space exploration for parameters such as parallelization,
-%pipelining, and tiling, efficient memory banking and buffering, and control signal management
-%and timing, programmers can easily tweak their designs at a high level to quickly regenerate HDL
-%code and come up with the best implementation of the algorithm they care about. , and how this leads to the Intermediate
-%Representation (IR) ready for the powerful analyses and optimizations discussed in Section 3 \todo{make link}
 
 % The API of Spatial can coarsely be broken down into the following: persistent memory elements, primitive operations, hierarchical control
 % structures, design space parameters, and host device interactions.  These abstractions provide the
@@ -103,7 +72,7 @@ reductions in a purely imperative way, \texttt{\small{Reduce}} informs the compi
 reduction function can be considered associative.
 %This is especially useful for operations like floating point summation where tree reduction isn't strictly equivalent to sequential accumulation, but is close enough in most applications.
 Similarly, reduction across a series of memories using \texttt{\small{MemReduce}} exposes more levels of parallelism than an imperative implementation.
-For example, in Figure~\ref{fig:matmult}, the \texttt{\small{MemReduce}} on line 45 allows the compiler to parallelize over parameter \texttt{\small{PAR\_K}}. This will result in multiple \texttt{\small{tileC}} tiles being populated in parallel, followed by a reduction tree to combine them into the accumulator \texttt{\small{accum}}.
+For example, in Figure~\ref{fig:matmult}, the \texttt{\small{MemReduce}} on line~39 allows the compiler to parallelize over parameter \texttt{\small{PAR\_K}}. This will result in multiple \texttt{\small{tileC}} tiles being populated in parallel, followed by a reduction tree to combine them into the accumulator \texttt{\small{accum}}.
 
 \texttt{\small{Foreach}}, \texttt{\small{Reduce}}, and \texttt{\small{MemReduce}} can be parallelized by setting parallelization factors on their respective counters.
 When loop parallelization is requested, the compiler analyzes whether
@@ -124,7 +93,7 @@ In outer loops, the amount of overlap is determined by the controller's ``depth'
 In sequential execution, a single iteration of a loop body is executed in its entirety before the next iteration begins.
 Sequential scheduling is equivalent to pipelining with the initiation interval equal to the loop body's latency, or, for outer controllers, a depth of 1. Streaming execution overlaps stages further by allowing each inner controllers to run asynchronously when inputs are available.
 Streaming is only a well-defined control scheme when communication between controllers is done through streaming interfaces or queues.
-%The rules used to schedule controllers are discussed further in Section~\ref{scheduling}.
+The rules used to schedule controllers are discussed further in Chapter~\ref{scheduling}.
 
 %Each of these control structures
 %comes with its own inherent contract on how its children controllers will be executed.

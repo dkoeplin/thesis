@@ -105,13 +105,6 @@ the number of unpackable LUTs plus the number of packable LUTs divided by two. W
 will use two registers on average. We model any registers unaccounted for by logic compute units as requiring
 compute units with two registers each. This gives us the final estimation for LUTs, DSPs, and BRAM.
 
-%We use a simple model for LUT packing, where we assume that pairs of LUTs which
-%can be packed are packed.
-%Table \todo{Table with control, memory, and mem generator templates as functions + description of what each variable is - should have four columns(?): node name, area function, and cycle function, and variable description?} gives examples of the resource usage and cycle latency of memory, controller, and memory command generator templates as functions of their respective parameters.
-%We model each of the factors listed in section~\ref{ss:modeling-con} using a two layer artificial neural networks
-
-%We use the Encog machine learning library~\cite{encog} to implement our neural network.
-
 \section{Design Parameter Tuning}
 \label{dse}
 
