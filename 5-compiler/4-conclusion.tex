@@ -1,2 +1,19 @@
 \section{Conclusion}
-\todo{Conclusion!}
+
+In this chapter, we discussed the Spatial compiler and the various optimizations
+it performs, including control scheduling, memory banking and buffering,
+design modeling and hardware parameter tuning, and pipeline retiming.
+We showed that our modeling approach has an average area estimation
+error of 4.8\% and average runtime estimation error of 6.1\% over all the benchmarks.
+We performed a detailed study for each benchmark on the space of designs described by tile sizes, parallelism
+factors, and coarse-grained pipelining and measure their effects on the utilization of different types of FPGA
+resources. We show that the design tuning within our compiler can run 279 to 6533 times
+faster than a commercial high-level synthesis tool. We also showed the potential of
+more advanced search strategies like active learning with a preliminary evaluation
+of HyperMapper integrated with Spatial.
+
+Most importantly, we have demonstrated that Spatial can target a range of reconfigurable
+architectures, including FPGAs and the Plasticine CGRA,
+from a single source. Spatial can achieve average speedups
+of $2.9\times$ over SDAccel while also being more productive for power users,
+with an average of 42\% fewer lines of code when defining the same applications.
