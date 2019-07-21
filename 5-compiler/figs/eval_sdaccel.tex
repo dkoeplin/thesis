@@ -1,7 +1,7 @@
 
 
 \begin{table*}
-
+\resizebox{\textwidth}{!}{%% begin resizebox
 \fontsize{8}{9}\selectfont
 \begin{tabular}{m{36pt} m{56pt} m{32pt} l d{3.0} d{6.0} d{4.0} d{4.0} d{4.1} }
 \ml{}                                                           & \ml{}           &\ml{}          & \ml{}                & \mc{LOC}    & \mc{LUTs}         & \mc{BRAM}         & \mc{DSPs}         & \mc{Time (ms)} \\ \toprule
@@ -151,7 +151,8 @@ TPC-H Q6 \\
 \ml{Average}                                  &&                 & \ml{Improv.} & \mc{42.3\%} & \mc{0.87$\times$} & \mc{1.01$\times$} & \mc{0.42$\times$} & \mc{2.90$  \times$} \\
 
 \bottomrule
-\end{tabular}
+\end{tabular} %% end resizebox
+} %% end resizebox
 
 \caption{Number of lines of code (LOC), area utilization, and runtime comparisons between SDAccel and Spatial on a single VU9P FPGA.
 For reference, the first row lists the total number of FPGA resources available. LOC improvements are percent improvements from SDAccel. The remaining improvement factors are calculated as $(SDAccel / Spatial)$.}
