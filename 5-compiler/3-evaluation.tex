@@ -312,6 +312,7 @@ Memory-bound benchmark \emph{TPC-H Q6} benefits from the higher DRAM bandwidth a
 % \end{table}
 
 \subsection{Spatial Generality Beyond FPGAs}
+\label{plasticine-evaluation}
 
 \begin{table}
 \centering
@@ -355,81 +356,3 @@ Compute-bound applications \emph{GDA}, \emph{GEMM}, and \emph{K-Means} use aroun
 Plasticine's higher on-chip bandwidth also allows these applications to better utilize the compute resources, giving these applications speedups of $9.9\times$, $55.0\times$, and $6.3\times$.
 Similarly, the deep compute pipeline in \emph{BlackScholes} occupies 73.4\% of compute resources after being split across multiple tiles,
 giving a speedup of $1.6\times$.
-
-%We implemented comparable versions of each of our benchmarks in C++ and synthesized them
-%using HLS and SDAccel tools.  There are certain constructs in Spatial that allow
-%certain algorithms to be expressed more concisely and in slightly different, but intuitive, ways that
-%expose the strengths of the language.  Each application exhibits certain characteristics which
-%can be exploited by certain aspects in the programming paradigms of Spatial and HLS. Specifically,
-%they can be characterized as compute-bound applications and memory-bound applications, with some
-%tradeoff between the two depending on design decisions.  While HLS is the industry standard for
-%exposing FPGAs to domain experts, our results show that Spatial is a suitable alternative that can
-%lead to better designs for certain algorithms with less overhead.
-
-%Spatial is a suitable platform for the designer who is interested in making the most of the
-%available resources, as it allows quick design tradeoffs in the app without needing to use complex pragmas throughout the app.
-%In applications that are memory bound, such as AES, BlackScholes, and Sobel, we would expect that neither
-%design could acheive significantly better speedup since they have access to the same DRAM interfaces.
-%For compute-bound applications, such as Kmeans, GEMM, and GDA, there is a large, interesting design space that
-%Spatial can quickly expose to the user.
-
-%\begin{figure}
-%\centering
-%\includegraphics[width=1\columnwidth, trim=0.5cm 0.9cm 1.0cm 0]{figs/f1_comp.png}
-%\caption{Speedup and resource utilization comparisons with SDAccel on F1.}
-%\label{fig:f1_comp}
-%\end{figure}
-
-% \subsection{Portability Across FPGAs and CGRAs}
-% We demonstrate the applicability of Spatial to beyond FPGA architectures by extending the compiler
-% to map Spatial IR to the Plasticine CGRA~\cite{plasticine}. Plasticine is a two-dimensional array of compute (PCUs) and memory (PMUs) tiles
-% with a statically configurable interconnect and address generators (AG) at the periphery to perform DRAM accesses.
-% Plasticine is a significant departure from FPGA with different kinds of constraints on memory banking and parallelization.
-
-% Similar to the FPGA, we construct area and runtime models specific to Plasticine, and drive the design space exploration to tune
-% benchmarks to Plasticine. Compiling to Plasticine then involves lowering the Spatial IR to a target-specific IR for the Plasticine low-level mapping compiler,
-% which outputs a configuration bitstream. Resource utilization reports are obtained from the low-level compiler.
-% Execution times are measured by simulating the generated bitstream in a cycle-accurate fashion at a clock frequency of 1 GHz.
-
-
-
-%Fortunately, due to the locality exhibited by these applications, designs with large tile sizes that do not maximize the off-chip
-%bandwidth are capable of achieving comparable performance to the ones that have 100\%
-%compute unit utilization. Hence, the best performing design point shown in
-%Table~\ref{table:plasticine_eval} does not correspond to the design with 100\% compute utilization.
-
-%Therefore, the given architecture cannot fit unrolling the outer loop by more than 1 without
-%exceeding 100\% PCU utilization.
-%\todo{K-Means is a sequential iterative convergence algorithm that neither outer loop nor
-%inner loop that computes the new centroids can be parallelized.} As a result, we could not maximize
-%either bandwidth or resource.}
-
-%For application that are not memory-bound, yet Plasticine is not able to take larger
-%unrolling factors, such as BlackScholes and K-Means, Plasticine still achieves roughly $4-7\times$
-%speedup compared to F1 due to its higher clock frequency.
-
-%Figure~\ref{fig:gemm_dse} shows the design space of GEMM on Plasticine. The bottom edged circles are
-%designs with large tile size that better capture locality. The dark large circles on the right are
-%designs with good PCU and PMU utilization, and high DRAM load bandwidth as result of outer loop
-%unrolling.
-
-
-
-%\begin{figure}
-%\centering
-%\includegraphics[width=1\columnwidth]{figs/GEMM_Blocked.png}
-%\caption{Design space for GEMM on Plasticine}
-%\label{fig:gemm_dse}
-%\end{figure}
-
-%\begin{figure}
-%\centering
-%\begin{minipage}{.5\linewidth}
-  %\centering
-  %\includegraphics[width=1\linewidth]{reg_K-FOLD}
-  %\caption{Regularization}
-  %\label{fig:reg}
-%\end{minipage}%
-%\end{figure}
-%\subsection{GEMM Case Study}
-%\gist{gemm}

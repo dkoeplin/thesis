@@ -43,7 +43,7 @@ propagation delay of every Spatial node. Area requirements include the number of
 units (DSPs), device block RAMs, LUTs, and registers that each template requires. To facilitate LUT packing estimation,
 we split template LUT resource requirements into the number of ``packable'' and ``unpackable'' LUTs required.
 %For templates with documented implementations such as floating point operations \cite{fp-altera}, we gather resource and cycle data in part by summarizing IP core documentation. However, these user manuals typically do not give resource usage breakdowns at the binary function level.
-We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters as given in Table~\ref{t-hwtemplates}.
+We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters, including parallelization factor and control schedule.
 Using this data, we create analytical models of each Spatial nodes's resource requirements and cycle counts for
 a predefined fabric clock. The area and cycle count of controller templates are modeled as functions of the latencies of the nodes contained within them.
 The total cycle count for a coarse-grain pipelined controller, for example,
