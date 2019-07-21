@@ -1,14 +1,29 @@
 \chapter{The Spatial Compiler}
 \label{compiler}
 
-Since Spatial is designed to capture algorithms that are intended to run on reconfigurable architectures,
-which gives rise to analyses and optimizations that are not used in software compilers.
-In this chapter, we describe the compiler's intermediate representation and its key passes, as summarized in Figure~\ref{fig:compilerflow}.
+Now that we have defined our input representation (parallel patterns) and given
+an overview of our Spatial hardware abstraction, we next describe the lowering
+process and the details of the Spatial compiler. Since Spatial is designed to
+to target reconfigurable architectures like FPGAs, there are a
+number of analyses and optimizations that differ from standard software compilers.
+The compiler's key passes are summarized in Figure~\ref{fig:spatial-diag} and
+described in this chapter.
 
-When targeting FPGAs, the Spatial compiler provides source-to-source translations from applications in the Spatial abstraction to synthesizable hardware descriptions in Chisel RTL~\cite{chisel}.
-Host (CPU) code is generated in C++.
-While
-details of targeting Plasticine are discussed in prior work~\cite{plasticine}.
+\begin{figure*}
+\centering
+\includegraphics[width=0.8\textwidth]{5-compiler/figs/spatial-diag}
+\caption{\label{fig:spatial-diag}Block diagram of the Spatial compiler.
+This compiler optimizes the Spatial hardware IR for a selected FPGA target
+and generates synthesizable Chisel RTL.}
+\end{figure*}
+
+The Spatial compiler provides translations from applications or IR
+in the Spatial abstraction to synthesizable hardware descriptions in Chisel RTL~\cite{chisel}.
+The input to Spatial can be either in the form of the accompanying Spatial language for ``power'' users,
+or in-memory tiled parallel patterns when compiling from higher level DSLs.
+The generated Chisel RTL is then compiled by the third party Chisel compiler and used
+to generate Verilog, which can in turn be synthesized on an FPGA target using vendor tools.
+Spatial also generates host code in C++ for FPGA runtime administration and data management.
 
 \input{5-compiler/1-IR}
 \input{5-compiler/2-compiler}

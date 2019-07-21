@@ -21,9 +21,7 @@
 & Parallel FIFO & Used to buffer ordered outputs of dynamic size & FlatMap over scalars \\ \cline{2-4}
 & CAM & Fully associative key-value store & GroupByFold over scalars \\
 \noalign{\hrule height 1.0pt}
-%\multicolumn{1}{|l|}{Priority Queue}          & \multicolumn{1}{p{7cm}|}{Pipelined priority insert into a list} & \multicolumn{1}{l|}{Sort} \\ \midrule
 
-%\multicolumn{4}{|c|}{Controllers} \\ \midrule
 \multirow{4}{1.5cm}[-10pt]{\centering \bf Controllers}
 & Sequential & Controller which coordinates sequential execution & Sequential IR node \\ \cline{2-4}
 & Parallel & Task parallel controller. Simultaneously starts all member modules when enabled, signals done when all members finish & Independent IR nodes \\ \cline{2-4}

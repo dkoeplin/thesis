@@ -1,20 +1,19 @@
-\section{Area and Runtime Estimation}
+\section{Area and Runtime Modeling}
 \label{sec:modeling}
-In this section, we describe our modeling methodology. Our models account for the various
+In this section, we describe our area and runtime modeling methodology. Our models account for the various
 design parameters for each Spatial node, as well as optimizations done by low-level logic
 synthesis tools in order to accurately estimate resource usage.
 
 \subsection{Modeling Considerations}
 \label{ss:modeling-con}
-%\gist{Low-level tools do fancy optimizations which estimator should be aware of.
-%  Examples: LUT packing, logic duplication, using BRAMs for large delay lines,
-%unavailable LUTs etc. Also, certain device architecture features play a significant role}
-The resource requirements of a given application implemented on an FPGA depend both on the target device and on the toolchain.
-Heterogeneity in the FPGA fabric, use of FPGA resources for routing, and other low-level optimizations performed by logic
-synthesis tools often have a significant impact on the total resource consumption of a design. Since these factors reflect
-the physical layout of computation on the device after placement and routing, they are not captured directly in the application's dataflow graph.
+The resource requirements of a given application implemented on an
+FPGA depend both on the target device and on the toolchain.
+Heterogeneity in the FPGA fabric, use of FPGA resources for routing,
+and other low-level optimizations performed by logic synthesis tools often have
+a significant impact on the total resource consumption of a design.
+Since these factors reflect the physical layout of computation on the device
+after placement and routing, they are not captured directly in the application's dataflow graph.
 We identify and account for the following factors:
-%\begin{itemize}
 
 \paragraph{LUT and register packing} Basic compute units in FPGAs are typically composed of a lookup table (LUT), and a small number of single bit multiplexers, registers, and full adders.
   Modern FPGA LUTs support up to 8-input binary functions but are often implemented using a pair of smaller LUTs~\cite{stratixv,virtex7}.
@@ -37,12 +36,6 @@ duplication can increase RAM utilization by 10 to 100\%, depending on the comple
 \paragraph{Unavailable resources} FPGA resources are typically organized in a hierarchy, such as Altera's Logic Array Block structure (10 LUTs)
 and Xilinx's Slice structure (4 LUTs). Such organizations impose mapping constraints which can lead to
 resources that are rendered unusable. In our experiments, the number of unusable LUTs made up only about 4\% of the design's total LUT usage.
-%\end{itemize}
-%\todo{Need to figure out how to say this.} We focus on one Altera device in this paper, the Stratix V.
-%ALMs in the Stratix V have 4 registers. We experimentally found that in most designs, just over 50 percent
-%of the registers in each ALM is used. Thus, we use a simple model where we assume registers do not
-%contribute to the ALM count unless they number over 2x the number of ALMs used to implement logic.
-%(packed lut count) + max(0, regs/2 - (packed lut count))
 
 \subsection{Methodology}
 In order to model runtime and resource requirements of Spatial designs, we first need an estimate of the area requirements and
@@ -53,16 +46,17 @@ we split template LUT resource requirements into the number of ``packable'' and 
 We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters as given in Table~\ref{t-hwtemplates}.
 Using this data, we create analytical models of each Spatial nodes's resource requirements and cycle counts for
 a predefined fabric clock. The area and cycle count of controller templates are modeled as functions of the latencies of the nodes contained within them.
-The total cycle count for a \emph{MetaPipe}, for example, is modeled using the recursive function
+The total cycle count for a coarse-grain pipelined controller, for example,
+is modeled using the recursive function
 \begin{displaymath}
 (N-1)\max(cycles(n) | n \in nodes) + \sum_{n \in nodes} cycles(n)
 \end{displaymath}
-where \emph{N} is the number of iterations of the \emph{MetaPipe} and \emph{nodes} is the set of nodes contained in the \emph{MetaPipe}.
+where \emph{N} is the number of iterations of the controller and \emph{nodes} is the
+longest chain of dependencies within the set of children
+controllers contained in the coarse-grain pipelined controller.
 
 Most templates require about six synthesized designs to characterize their resource and area usage as a function of their parameters. Note that these models include estimates of off-chip memory access latency as a function of the
 number and length of memory commands, as well as contention due to competing accessors. Since template models are application-independent, each needs only be characterized once for a given target device and logic synthesis toolchain. The synthesis times required to model templates can therefore be amortized over many applications.
-%We show a subset of the template models used in our experiments in Table~\ref{table:benchmarks}.
-%\note{not sure I understand this. Which part is app-independent. Presumably the way to explore the space will dependt on the application. Is this only for the device models? }
 
 Using these models, we run a pair of analysis passes over the application's intermediate representation to estimate design cycle counts and area requirements.
 
@@ -75,7 +69,7 @@ iteration of a \emph{Pipe} is the length of the body's critical path, calculated
 search of the body's subgraph and the propagation delay of all primitive nodes within the graph.
 Input dataset sizes, given as user annotations in the high-level program, are used by the analysis pass
 along with tiling factors to determine the iteration counts for each controller template.
-Iteration counts are then used to calculate the total runtime of the respective controller nodes. %using the equations given in Table~\ref{table:benchmarks}.
+Iteration counts are then used to calculate the total runtime of the respective controller nodes.
 
 
 \subsubsection{Area Estimation}
@@ -83,7 +77,7 @@ Since the FPGA resource utilization of a design is sensitive to factors that are
 in the design's dataflow graph, we adopt a hybrid approach in our area analysis.
 
 We first estimate the area of the design by counting the resource
-requirements of each node using their pre-characterized area models. In \emph{Pipe} bodies, we also
+requirements of each node using their pre-characterized area models. In pipelined controller bodies, we also
 estimate the resources required for delaying signals. This is done by recursively calculating the
 propagation delay of every path to each node using depth first search. Paths with slack relative to
 the critical path to that node require their width (in bits) multiplied by the slack delay resources.
@@ -111,9 +105,6 @@ the number of unpackable LUTs plus the number of packable LUTs divided by two. W
 will use two registers on average. We model any registers unaccounted for by logic compute units as requiring
 compute units with two registers each. This gives us the final estimation for LUTs, DSPs, and BRAM.
 
-%To account for resources utilized by nodes in the dataflow graph, we then perform a detailed characterization of all primitive nodes
-%in DHDL and use the data to count the resources required to implement the datapath.
-
 %We use a simple model for LUT packing, where we assume that pairs of LUTs which
 %can be packed are packed.
 %Table \todo{Table with control, memory, and mem generator templates as functions + description of what each variable is - should have four columns(?): node name, area function, and cycle function, and variable description?} gives examples of the resource usage and cycle latency of memory, controller, and memory command generator templates as functions of their respective parameters.
@@ -121,25 +112,20 @@ compute units with two registers each. This gives us the final estimation for LU
 
 %We use the Encog machine learning library~\cite{encog} to implement our neural network.
 
-\section{Design Space Exploration}
+\section{Design Parameter Tuning}
 \label{dse}
-\todo{CLEAN UP, deduplicate}
 
 The scheduling and memory banking options identified by the compiler, together with loop parallelization and tile size parameters, forms a design space for the application.
 The design tuning pass is an optional compiler pass which allows for fast exploration of this design space in order to make area/runtime design tradeoffs.
 When design tuning is enabled, it repeatedly picks design points and evaluates them by rerunning the control scheduling, memory analysis, and estimation analysis passes. The output from this search is a single set of parameters from the Pareto frontier.
 
-Unfortunately, application design spaces tend to be extremely large, and exhaustive search on an entire space is often infeasible. Of the benchmarks discussed in Section~\ref{evaluation},
+Unfortunately, application design spaces tend to be extremely large, and exhaustive search on an entire space is often infeasible. Of the benchmarks we evaluate in Chapter\ref{spatial-evaluation},
 only BlackScholes has a relatively small space of about $80,000$ points. While this space can be explored exhaustively by Spatial in a few minutes, other spaces are much larger, spanning $10^6$ to $10^{10}$ points and
 taking hours or days to exhaustively search. For example, even with the few explicit design parameters exposed in the code in Figure~\ref{fig:matmult}, when combined with implicit pipelining and parallelization parameters, this code already has about $2.6\times10^8$ potential designs.
-DHDL~\cite{dhdl} employed random search after heuristic pruning, reducing the total space by two to three orders of magnitude. However, this approach has high variance on larger design spaces and may inadvertently prune desirable points.
 
-To reduce the variance on larger design spaces, Spatial's design space exploration flow integrates an active learning-based autotuner called HyperMapper~\cite{Bodin2016:PACT16,NardiBSVDK17,Saeedi_ICRA_2017}.
-HyperMapper is a multi-objective derivative-free optimizer (DFO), and has already been demonstrated on the SLAMBench benchmarking framework \cite{nardi2015introducing}.
-HyperMapper creates a surrogate model using a Random Forest regressor, and predicts the performance over the parameter space. This regressor is initially built using only few hundred random design point samples and is iteratively refined in subsequent active learning steps.
-
-Our design space exploration tool uses the resource and cycle count estimates
-to explore the space of designs described by the parameters in Table~\ref{t-hwtemplates}.
+\subsection{Heuristic Random Search}
+In the first implementation of our design tuning pass, we employ purely
+random search with heuristic pruning with a fixed number of selected design points.
 As we are dealing with large design spaces on the order of millions of points even for small benchmarks,
 we prune invalid and suboptimal points in the search space using a few simple heuristics:
 \begin{itemize}
@@ -149,7 +135,22 @@ we prune invalid and suboptimal points in the search space using a few simple he
   \item The total size of each local memory is limited to a fixed maximum value.
 \end{itemize}
 
-These heuristics defines a ``legal'' subspace of the total design space.
+These heuristics defines a ``legal'' subspace of the total design space and can
+generally reduce the total design space by two or three orders of magnitude.
 In our experiments, we randomly generate estimates for up to $75,000$ legal
 points to give a representative view of the entire design space. We immediately
-discard illegal points.
+discard illegal points. However, this approach gave relatively high variance
+on larger design spaces and has no guarantee against inadvertently skipping desirable points.
+
+\subsection{Active Learning Based Search}
+To reduce the variance on larger design spaces, the second version of
+Spatial's design space exploration flow integrates an active learning-based autotuner called HyperMapper~\cite{Bodin2016:PACT16,NardiBSVDK17,Saeedi_ICRA_2017}.
+HyperMapper is a multi-objective derivative-free optimizer (DFO), and has already been demonstrated on the SLAMBench benchmarking framework \cite{nardi2015introducing}.
+HyperMapper creates a surrogate model using a random forest regressor,
+and predicts the performance over the parameter space.
+This regressor is initially built using only few hundred random design point
+samples, as compared to the $75,000$ samples in random search,
+and is iteratively refined in subsequent active learning steps. This approach
+forces the search process to focus only on points which are likely to be closer to the
+Pareto as the search progresses, meaning the search should take far fewer total
+points to approximate the true design Pareto.

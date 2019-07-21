@@ -131,64 +131,17 @@ Streaming is only a well-defined control scheme when communication between contr
 %For example, a Foreach loop with two other Foreach loops inside of it will execute these two children loops in a pipelined
 %manner and transform all of the relevant memory elements into their proper buffered elements.
 
-% \newsavebox{\firstlisting}
-% \begin{lrbox}{\firstlisting}
-% \begin{lstlisting}[language=Spatial,linewidth=0.92\columnwidth]
-% val data   = loadData("data.csv")
-% val dram1D = DRAM[Float](10000)
-% val dram2D = DRAM[Float](128, 320000)
-% val input  = ArgIn[Float]   // Input Register
-% val output = ArgOut[Float]  // Output Register
-% val sram1D = SRAM[Float](1024)
-% val sram2D = SRAM[Float](32, 32)
-% val addr   = SRAM[Int](32)
-% val fifo   = FIFO[Float](32)
-% val stack  = LIFO[Float](32)
-% val buffer = LineBuffer[Int](3, 1028)
-% val rfile  = RegFile[Int](9)
-% val reg    = Reg[Int]
-
-% // Send/get an array of data to/from shared DRAM
-% sendArray(dram1D, data)
-% val array = getArray(dram)
-% // Send/get a scalar value to/from the accelerator
-% setArg(input, 95)
-% val out = getArg(output)
-
-% // Dense transfer a 32 x 32 block at (i,j)
-% sram2D load dram2D(i::i+32, j::j+32)
-% dram2D(i::i+32, j::j+32) store sram2D
-% // Gather/scatter values between dram and sram
-% sram1D gather dram1D(offset=0, addr)
-% dram1D(addr) scatter sram1D
-
-% // Enqueue the topmost element of stack into fifo
-% fifo.enq( stack.peek )
-% // Shift a vector of six elements from into rfile
-% rfile <<= buffer(i::i+6)
-% // Store current value of reg into sram1D at address 32
-% sram1D(32) = reg.value
-% \end{lstlisting}
-% \end{lrbox}
-
-% \begin{figure}
-% \usebox{\firstlisting}
-% \vspace{-10pt}
-% \caption{Examples of memory operations in Spatial.
-% \vspace{-10pt}
-% }
-% \label{f:memexamples}
-% \end{figure}
-
 
 \subsection{Memories}
+
+\include{4-spatial/figs/memories}
+
 Spatial offers a variety of memory templates that enable the user to abstractly but explicitly control allocation of data across an accelerator's heterogeneous memory.
-%These templates are available in a form similar to a data structures library, with each memory type being specialized for specific operations and access patterns.
 The Spatial compiler is aware of all of these memory types and is able to automatically optimize each of them.
 
 Spatial's ``on-chip'' memories, overviewed in Figure~\ref{t:syntaxTable}c, represent the creation of statically sized, logical memory spaces.
 Supported memory types include read-only lookup-tables (\texttt{\small{LUTs}}), scratchpads (\texttt{\small{SRAM}}), line buffers (\texttt{\small{LineBuffer}}), fixed size queues and stacks (\texttt{\small{FIFO}} and \texttt{\small{LIFO}}),  registers (\texttt{\small{Reg}}), and register files (\texttt{\small{RegFile}}).
-%Figure~\ref{f:memexamples} shows some examples of operations on instances of these memory types.
+Figure~\ref{f:memexamples} shows some examples of operations on instances of these memory types.
 These memories are always allocated using resources on the accelerator, and by default are not accessible by the host.
 While each memory is guaranteed to appear coherent to the programmer, the number and type of resources used to implement each memory is not restricted.
 With the exception of \texttt{\small{LUTs}} and \texttt{\small{Regs}} with explicit initial values, the contents of a memory is undefined upon allocation.
@@ -209,7 +162,7 @@ Spatial offers several specialized interfaces for communication with the host an
 \texttt{\small{ArgIn}}, \texttt{\small{ArgOut}}, and \texttt{\small{HostIO}} are specialized registers with memory mappings on the CPU host.
 \texttt{\small{ArgIns}} may only be written by the host during device initialization, while \texttt{\small{ArgOuts}} can only be read, not written, by the host.
 \texttt{\small{HostIO}} can be read or written by the host at any time during accelerator execution.
-%This specialization gives the Spatial compiler extra information about when important values like loop iteration bounds may change.
+This specialization gives the Spatial compiler extra information about when important values like loop iteration bounds may change.
 Additionally, scalars, including \texttt{\small{DRAM}} sizes, implicitly create \texttt{\small{ArgIn}} instances when used within an \texttt{\small{Accel}} scope. For instance, in Figure~\ref{fig:matmult}, the dimensions of matrices \texttt{\small{A}}, \texttt{\small{B}}, and \texttt{\small{C}} are passed to the accelerator via implicit \texttt{\small{ArgIn}}s
 since they are used to generate loop bounds (e.g. \texttt{\small{A.rows}}, \texttt{\small{B.cols}}).
 
@@ -254,26 +207,16 @@ An application's implicit and explicit application parameters together define a 
 
 \subsection{Examples}
 
-\input{4-spatial/figs/example1}
-\input{4-spatial/figs/example2}
-
 We conclude discussion of the Spatial language with two examples.
 Figure~\ref{fig:firfilter} shows a streaming implementation of a finite impulse response (FIR) filter.
 This example demonstrates how, when using \texttt{\small{Stream(*)}}, Spatial's semantics are similar to other dataflow-oriented streaming languages. The body of the loop on line 24 is run each time a valid element appears at the \texttt{\small{StreamIn}} input. Spatial pipelines this body to maximize its throughput.
 
 While basic FIR filters are simple to write and tune even in HDLs, Spatial makes expanding upon simple designs easier. The number of weights and taps in this example can be set at device initialization, without having to resynthesize the design. Additionally, the number of elements combined in parallel in the filter is defined as a parameter. Design space exploration can automatically tune the design for the smallest area or lowest latency.
 
-
-\begin{figure*}
-\centering
-%%% trim = left, bottom, right, top
-\includegraphics[clip, trim=0.3cm 15.4cm 7.7cm 0.0cm, width=\linewidth]{figs/compiler_flow.pdf}
-\caption{A summary of the passes in the Spatial compiler for targeting FPGAs.}
-\label{fig:compilerflow}
-\end{figure*}
-
-
 Figure~\ref{fig:sortMerge} shows a simple implementation of a fixed size merge sort in Spatial. Here, data is loaded into on-chip scratchpad, sorted, and then stored back into main memory.
 The language's distinction between on-chip and off-chip memory types makes writing and reasoning about tiled designs like this one much more natural.
 This implementation uses a statically sized \texttt{\small{SRAM}} and two \texttt{\small{FIFOs}} to split and order progressively larger size chunks of the local data.
 The chunk size is determined by the outermost loop on line 8, and increments in powers of two. This behavior is best expressed in Spatial as an FSM.
+
+\input{4-spatial/figs/example1}
+\input{4-spatial/figs/example2}

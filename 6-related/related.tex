@@ -160,68 +160,6 @@ for nested parallel patterns, which we show are essential components for generat
 automatically tiling parallel patterns to improve locality for individual compute units and a process
 for inferring hardware metapipelines from nested parallel patterns.
 
-% We conclude with a qualitative comparison of Spatial to related work, drawing from the criteria in Section~\ref{background}.
-A good FPGA design tool should have the following features:
-\begin{itemize}
-  \item \emph{Representation}: The tool must internally represent hardware using a general and parameterizable
-    representation. This representation must preserve information regarding data locality,
-    memory access pattern and parallelism in the input at all levels of nesting.
-    Such a representation must be target-agnostic and should be targetable from high-level
-    language constructs.
-  \item \emph{Estimation}: The tool must quickly analyze a design in the above representation
-    and estimate metrics such as cycle counts and FPGA resource requirements for a target FPGA.
-  \item \emph{DSE}: The tool must be able to leverage the estimators to prune the large design search space,
-    walk the space of designs, and find the Pareto-optimal surface.
-  \item \emph{Generation}: The tool must be able to automatically generate hardware which can then be
-    synthesized and run on the target FPGA. Without this feature, hardware would typically
-    be generated using separate toolchains for estimation and generation, which makes
-    accurate estimation much harder.
-\end{itemize}
-
-Previous work on generating FPGA accelerators has focused on various aspects of the points
-mentioned above. Here we provide an overview of this work.
-
-High-level synthesis (HLS) tools such as LegUp~\cite{legup-tecs} and Vivado HLS~\cite{vivadohls} (previously AutoPilot)~\cite{cong11hls}
-synthesize hardware from C. These tools provide estimates of the cycle count, area and power consumption
-along with hardware generation. However, imperative design descriptions place greater burden on
-the compiler to discover parallelism, pipeline structure and memory access patterns.
-The absence of explicit parallelism often leads to conservative compiler analyses
-producing sub-optimal designs. While some tools allow users to provide compiler
-hints in the form of directives or pragmas in the source code, this approach
-fails to capture key points in the design space.
-\begin{figure}[ht]
-  \begin{lstlisting}[mathescape=true, numbers=none, language=C]
-L1: for (int i=0; i<R; i++) {
-  #pragma HLS PIPELINE II=1
-  L11: for (int j=0; j<C; j++) {
-    sub[j] = y[i] ? x[i][j]-mu0[j] : x[i][j]-mu1[j];
-  }
-  L121: for (int j1=0; j1<C; j1++) {
-    L122: for (int j2=0; j2<C; j2++) {
-      sigma[j1][j2] += sub[j1]*sub[j2];
-  }
-}
-  \end{lstlisting}
-  \caption{GDA for high-level synthesis.}
-  \label{fig:gda-hls}
-\end{figure}
-For example, consider Figure~\ref{fig:gda-hls} which represents the gaussian discriminant analysis (GDA)
-kernel. All loops in this kernel are parallel loops. One set of valid design points would be to implement $L1$
-as a coarse-grained pipeline with $L11$ and $L121$ as its stages. Commercial HLS tools support
- limited coarse-grained pipelining, but with serveral restrictions. For example,
-the \emph{DATAFLOW} directive in Vivado HLS enables users to describe coarse-grained pipelines.
-However, the directive does not support arbitrarily nested coarse-grained pipelines,
-multiple producers and consumers between stages, or coarse-grain pipelining within a finite loop scope~\cite{vivadohls_ug}, as required in the outer loop in Figure~\ref{fig:gda-hls}.
-%Such coarse-grained pipelining constructs are unfortunately not supported in most commercial
-%HLS tools, leaving these design points unexplored.
-%An attempt to pipeline $L1$ would create a large design with a deep pipeline where both $L11$ and $L121$
-%are completely unrolled. % \todo{add some numbers}.
-%This is a different design point than creating a coarse-grained pipeline.
-In addition, compile times for HLS can be long for large designs due to the complications that
-arise during scheduling. % \todo{add some numbers}.
-Previous studies~\cite{Aladdin} point out other similar issues.
-Such limitations restrict the capability of HLS tools to explore more complex design spaces.
-
 Pouchet et al.~\cite{pouchet13fpga}
 explore combining HLS with polyhedral analysis to optimize input designs for locality
 and use estimates from HLS tools to drive design space exploration. While this captures a larger design

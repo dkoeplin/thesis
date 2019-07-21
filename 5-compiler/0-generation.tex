@@ -1,0 +1,62 @@
+\section{Hardware Generation}
+\label{hardware}
+
+In this section, we describe how the tiled intermediate representation is
+lowered into the Spatial hardware abstraction. This step forms the logical boundary
+between the higher level compiler and the Spatial hardware compiler.
+
+\subsection{Memory Allocation}
+Generating efficient FPGA hardware requires effective usage of on-chip memories (buffers).
+Here, we allocate buffers for arrays based on data access patterns and size.
+%Since the maximum size of data inputs can not usually be inferred statically, we support the use of programmer hints about tile sizes to aid this analysis.
+%Information from these annotations is propagated through the IR during this analysis.
+All arrays with statically known sizes, such as array \emph{copies} generated in the tiling transformation described in
+Chapter~\ref{sec:strip-mining}, are assigned to buffers.
+Dynamically sized arrays are kept in main memory and we generate
+caches or buffers with gather operations for any non-affine accesses to these arrays.
+
+Special memories are used for buffers which have unique access patterns.
+Streaming or ``one-touch'' data is  either streamed directly to and from off-chip memory
+or realized using FIFOs on-chip depending on their usage.
+% The tiling transformations described in Section
+% represent data tile copies with explicit nodes in the IR. This greatly simplifies memory allocation analysis.
+% to first determine where data
+% is stored and how it is accessed.
+% The goal of this analysis is to assign buffers
+% to either on-chip or off-chip memories and select a memory template based on the properties
+% of the buffer.
+%In general, we use the following heuristics to allocate memories:
+%\begin{itemize}
+%  \item Buffers which have statically unknown dimensions (typically inputs and outputs)
+%    are allocated off-chip. However, we allow programmers to provide hints to the compiler using
+%    annotations which can enable more aggressive compiler optimizations. For example, the programmer
+%    can hint that a certain buffer is ``cacheable'' -- meaning that the size of the buffer is typically
+%    small enough (a few Kilobytes) to completely fit on-chip. Our analysis makes use of this information
+%    and performs more aggressive on-chip memory allocation.
+%  \item Buffers corresponding to tiles are allocated on-chip.
+%  \item
+%  \item Intermediate buffers in a \emph{metapipeline} (described in the next section) are realized
+%    using \emph{Double Buffers}.
+%\end{itemize}
+
+%While the memory allocation analysis performs an initial assignment of templates to buffers, certain special
+%buffers need to be \emph{promoted} to use the double buffer template. This is determined during
+%metapipeline analysis, described in the next section.
+
+
+%\subsection{Pipeline Execution Units}
+\subsection{Pipeline Execution Units}
+We generate parallelized and pipelined hardware when parallel patterns compute with scalar values,
+as occurs for the innermost patterns.
+We implemented templates for each
+pipelined execution unit in Table~\ref{t-hwtemplates} using MaxJ language
+constructs, and instantiate each template with the proper parameters (e.g., data type,
+vector length) associated with the parallel pattern.  The MaxJ compiler
+applies low-level hardware optimizations such as vectorization, code
+scheduling, and fine-grained pipelining, and generates efficient hardware.  For
+example, we instantiate a reduction tree for a MultiFold over an
+array of scalar values, which is automatically pipelined by the MaxJ compiler.
+
+
+
+%\subsection{Metapipelining}

@@ -107,9 +107,8 @@
   morekeywords={Foreach,Reduce,MemReduce,MemFold,Fold,Accel,Stream,FSM, if, else, Parallel, Pipe,Sequential, DummyPipe }
 }
 
-
 \lstdefinelanguage{Pseudo}{
-  basicstyle=\fontsize{7}{7}\beramonott,
+  basicstyle=\fontsize{9}{10}\beramonott,
   frame=tlbr,
   framesep=4pt,
   framerule=0pt,
@@ -130,7 +129,7 @@
   morecomment=[l]{//},
   morecomment=[s]{/*}{*/},
   mathescape=true,
-  backgroundcolor=\color{backcolour},
+  %backgroundcolor=\color{backcolour},
   tabsize=2,
   basewidth={0.55em, 0.4em},
   columns=fullflexible,
@@ -139,13 +138,12 @@
   showspaces=false,
   keywordstyle=\bfseries,
   breaklines=true,
-  basicstyle=\fontsize{9}{10}\beramonott,
   morestring=[b]",
   morestring=[b]',
   morecomment=[l]{//},
   morecomment=[s]{/*}{*/},
   escapeinside={@@}{@@},
-  keywordstyle=\bfseries,
+  keywordstyle=\color{magenta}\fontseries{b},
   morekeywords={function, input, output, if, for, all, each, let, in, else, break, then, end, return}
 }
 
@@ -285,14 +283,6 @@
   morecomment=[l]{//},
   morecomment=[s]{/*}{*/},
   morekeywords={mapRows,mapCols,zip,zipWithIndex,groupBy,sum,min,minBy,reduce,for,filter,do,while,slice,copy,multiFold,fold,groupByFold,map,flatMap}
-}
-
-\lstdefinelanguage{Pseudo}{
-  morestring=[b]",
-  morestring=[b]',
-  morecomment=[l]{//},
-  morecomment=[s]{/*}{*/},
-  morekeywords={For, End, Foreach}
 }
 
 \lstset{

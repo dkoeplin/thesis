@@ -1,7 +1,16 @@
 \section{Evaluation}
 \label{spatial-evaluation}
 
-In this section, we evaluate Spatial by comparing programmer productivity and the performance of generated designs to Xilinx's commercial HLS tool, SDAccel. We then evaluate the HyperMapper design tuning approach and demonstrate Spatial's advantages for portability across FPGAs and the Plasticine CGRA.
+While Spatial's primary goal is to serve as an intermediate hardware abstraction
+for compiling DSLs to FPGAs, this level of abstraction also makes it competitive
+in terms of programmer productivity with existing HLS tools.
+In this section, we evaluate Spatial and frontend language
+by comparing programmer productivity
+and the performance of generated designs to Xilinx's commercial HLS tool, SDAccel.
+
+We then evaluate our modeling accuracy and the first
+approach to design tuning with random search with heuristic pruning.
+We then evaluate the HyperMapper design tuning approach and demonstrate Spatial's advantages for portability across FPGAs and the Plasticine CGRA.
 
 \subsection{FPGA Performance and Productivity}
 We first evaluate the FPGA performance and productivity benefits of Spatial against SDAccel, a commercial C-based programming tool from Xilinx for creating high-performance accelerator designs. We use SDAccel in our study as it has similar performance and productivity goals as Spatial, supports the popular OpenCL programming model, and performs several optimizations related to loop pipelining, unrolling, and memory partitioning~\cite{sdaccel}. Baseline implementations of the benchmarks in Table~\ref{t:hls_comp} have been either obtained from a public SDAccel benchmark suite from Xilinx~\cite{sdaccelBench}, or written by hand. Each baseline has then been manually tuned by using appropriate HLS pragmas~\cite{hlsPragmaRef} to pick loop pipelining, unrolling, and array banking factors, and to enable dataflow optimizations. Design points for Spatial are chosen using the DSE flow described in Section~\ref{dse}.
@@ -30,7 +39,7 @@ Spatial provides a productive platform to program FPGAs, with a 42\% reduction i
 
 \subsection{Design Space Exploration}
 
-We evaluate the accuracy of the estimations described in Section~\ref{sec:modeling}. We use our models to
+We evaluate the accuracy of the estimations described in Chapter~\ref{sec:modeling}. We use our models to
 study the space of designs on benchmarks from the data analytics,
 machine learning, and financial analytics domains. We then evaluate the speed of our design
 space exploration against a commercial high-level synthesis tool.
@@ -69,17 +78,15 @@ and \emph{kmeans}
 are commonly used machine learning kernels used for data classification and clustering, respectively.
 All benchmarks operate on single-precision floating point numbers,
 except in certain cases where the benchmark requires integer or boolean values as inputs.
-For the purposes of this paper, all benchmarks were written in DHDL by hand but are equivalent to what
+For the purposes of this paper, all benchmarks were written in Spatial by hand but are equivalent to what
 could be generated automatically from higher level DSLs.
 
-We implement the DHDL compiler framework in Scala. The DHDL compiler generates hardware by emitting
-MaxJ, which is a low-level Java-based hardware generation language. Each generated design is synthesized
-and run on an Altera 28nm Stratix V FPGA on a Max4 MAIA board at a fabric clock frequency of 150MHz.
-The MAIA board interfaces with an Intel CPU
+Each generated design is synthesized and run on an Altera 28nm Stratix V FPGA
+on a Max4 MAIA board at a fabric clock frequency of 150MHz. The MAIA board interfaces with an Intel CPU
 via PCIe. The board has 48GB of dedicated off-chip DDR3 DRAM with a peak bandwidth of 76.8GB/s. In practice,
 our maximum memory bandwidth is 37.5 GB/s, as our on-chip memory clock is limited to 400MHz.
-We leverage Maxeler's runtime to manage communication and data movement between the host CPU and
-the MAIA board.
+For this board, we leverage Maxeler's runtime to manage communication and data movement
+between the host CPU and the MAIA board.
 Execution time is measured starting
 from when the FPGA design is started (after input has been copied to FPGA DRAM) and stopped after
 the design finishes execution (before output is copied to CPU DRAM). We report execution time as the
@@ -193,7 +200,7 @@ Vivado HLS~\cite{vivadohls}, a commercial high-level synthesis tool from Xilinx.
 Our evaluation uses the GDA example in Figure~\ref{fig:gda-hls} as input to the high-level synthesis tool, and the GDA
 design in Figure~\ref{fig:gda-graph} as input to our design space exploration tool. Design parameters
 for the high-level synthesis tool are the unrolling factors. We also include a pipeline directive
-toggle for each loop in the design. For DHDL, we vary all design parameters
+toggle for each loop in the design. For Spatial, we vary all design parameters
 specified in Figure~\ref{fig:gda-code}. Speed
 is measured by comparing the average estimation speed per point for 250 design points for each tool.
 In our experiments, our analysis takes 5 to 29 milliseconds per design depending on the size of the application's intermediate representation.Analysis of GDA also takes 17 milliseconds per design.
@@ -238,15 +245,13 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
 % \subcaption{Exhaustive and HyperMapper ($R$=1000) generated Pareto curves. }
 % \label{paretos}
 % \end{subfigure}
-
-% \vspace{-10pt}
 % \caption{Design space tuning on \emph{BlackScholes}.}
 % \label{figHVI}
 % \end{figure}
 
 % \begin{table}[ht]
 % \centering
-% \caption{Runtime to reach accuracy of TODO\% and corresponding variance for design tuning with heuristic search and HyperMapper.\vspace{-10pt}}
+% \caption{Runtime to reach accuracy of TODO\% and corresponding variance for design tuning with heuristic search and HyperMapper.}
 % \label{tableDSE}
 
 % \fontsize{7}{9}\selectfont
@@ -269,7 +274,7 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
 
 \begin{table}
 \centering
-\caption{Runtimes (ms) of tuned designs on ZC706, followed by runtimes and speedup~($\times$) of directly porting these designs to the VU9P, then runtimes and successive speedup over ported designs when tuned for the VU9P. The \emph{Total} column shows the cumulative speedup. \vspace{-5pt} }
+\caption{Runtimes (ms) of tuned designs on ZC706, followed by runtimes and speedup~($\times$) of directly porting these designs to the VU9P, then runtimes and successive speedup over ported designs when tuned for the VU9P. The \emph{Total} column shows the cumulative speedup.}
 \label{fig:zynq_comp}
 
 \centering
@@ -289,7 +294,6 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
 
    \multicolumn{7}{l}{\vspace{10pt}\footnotesize{ $^\dag$SW with 160 base pairs, the largest to fit on the ZC706.}}
 \end{tabular}
-\vspace{-10pt}
 \end{table}
 
 We next demonstrate the portability of Spatial code by targeting two different FPGA architectures; (1) the Zynq ZC706 SoC board, and (2) The Virtex Ultrascale+ VU9P on the Amazon EC2 F1.
@@ -306,7 +310,7 @@ Memory-bound benchmark \emph{TPC-H Q6} benefits from the higher DRAM bandwidth a
 
 
 % \begin{table}
-% \caption{Speedup of VU9P over ZC706. \vspace{-10pt} }
+% \caption{Speedup of VU9P over ZC706.}
 % \label{fig:zynq_comp}
 
 % \fontsize{8}{10}\selectfont
@@ -321,9 +325,8 @@ Memory-bound benchmark \emph{TPC-H Q6} benefits from the higher DRAM bandwidth a
 
 \begin{table}
 \centering
-\caption{Plasticine DRAM bandwidth, resource utilization, runtime, and speedup ($\times$) over VU9P FPGA. \vspace{-5pt} }
+\caption{Plasticine DRAM bandwidth, resource utilization, runtime, and speedup ($\times$) over VU9P FPGA.}
 \label{table:plasticine_eval}
-
 \centering
 \fontsize{7}{7}\selectfont
 \resizebox{0.99\columnwidth}{!}{
@@ -340,7 +343,6 @@ Memory-bound benchmark \emph{TPC-H Q6} benefits from the higher DRAM bandwidth a
 
 \bottomrule
 \end{tabular}}
-\vspace{-10pt}
 \end{table}
 
 

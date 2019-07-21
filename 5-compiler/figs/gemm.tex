@@ -1,0 +1,70 @@
+\newsavebox{\gemm}
+\begin{lrbox}{\gemm}
+\begin{lstlisting}[language=Spatial,linewidth=0.4\textwidth]
+// Load data from files
+val a = loadMatrix[Float](args(0))
+val b = loadMatrix[Float](args(1))
+
+// Allocate space on accelerator DRAM
+val A = DRAM[Float](a.rows,a.cols)
+val B = DRAM[Float](b.rows,b.cols)
+val C = DRAM[Float](a.rows,b.cols)
+
+// Create explicit design parameters
+val M = 128 (64, 1024)  // Tile size - rows
+val N = 128 (64, 1024)  // Tile size - cols
+val P = 128 (64, 1024)  // Tile size - common
+val PAR_K  = 2 (1, 8)   // Unroll factor of k
+val PAR_J  = 2 (1, 16)  // Unroll factor of j
+
+// Transfer data to accelerator DRAM
+sendMatrix(A, a)
+sendMatrix(B, b)
+
+// Specify the accelerator design
+Accel {
+  // Produce C in M x N tiles
+  Foreach(A.rows by M, B.cols by N){
+    (ii,jj) =>
+    val tileC = SRAM[Float](M, N)
+    // Combine intermediates (outer)
+    MemReduce(tileC)(A.cols by P){ kk =>
+      // Allocate on-chip scratchpads
+      val tileA = SRAM[Float](M, P)
+      val tileB = SRAM[Float](P, N)
+      val accum = SRAM[Float](M, N)
+
+      // Load tiles of A and B from DRAM
+      tileA load A(ii::ii+M, kk::kk+P)
+      tileB load B(kk::kk+P, jj::jj+N)
+
+      // Combine intermediates (across P)
+      MemReduce(accum)(P par PAR_K){ k =>
+        val partC = SRAM[Float](M, N)
+        Foreach(M by 1, N par PAR_J){ (i,j) =>
+          partC(i,j) = tileA(i,k) * tileB(k,j)
+        }
+        partC
+      // Combine with element-wise add
+      }{(a,b) => a + b }
+    }{(a,b) => a + b }
+
+    // Store the tile of C to DRAM
+    C(ii::ii+M, jj::jj+N) store tileC
+  }
+}
+// Save the result to another file
+saveMatrix(args(2), getMatrix(C))
+\end{lstlisting}
+\end{lrbox}
+
+\begin{figure}
+\begin{tabular}{cm{0.4\textwidth}m{0.6\textwidth}}
+{\hspace{10pt}\usebox{\gemm}} &
+{\includegraphics[width=0.55\textwidth]{5-compiler/figs/ctrltree.pdf}} \\
+{\parbox{0.4\textwidth}{\centering{a. Spatial implementation. }}} &
+{\parbox{0.6\textwidth}{\centering{b. Control/access tree for \texttt{\small{tileB}}.}}}
+\end{tabular} %% end resizebox
+\caption{Matrix multiplication ($C$~=~$A~\cdot~B$) implemented in Spatial and corresponding control/access tree IR. Control nodes are annotated with their level (outer versus inner), schedule, and loop iterator name. Memory access nodes are annotated with their parallelization factor.}
+\label{fig:matmult}
+\end{figure}

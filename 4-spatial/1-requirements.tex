@@ -51,47 +51,107 @@ As with any hardware design, accelerator design spaces can be extremely large an
 While making optimizations like loop pipelining and memory banking automatic help to improve productivity, these transformations leave the compiler with numerous choices about how to allocate resources.
 These decisions can accumulate large performance/area tradeoff spaces which combine exponentially with application complexity. In a fixed implementation
 of general matrix multiplication, there is a large design space that includes the dimensions of on-chip tiles that hold portions of the full matrices and decisions
-about the parallelizations of loops that iterate over tiles as well as loops that iterate within these tiles.  The parameters shown in lines 17 -- 21 of Figure~\ref{fig:matmult} expose just a few of these many design space parameters.
-Previous work~\cite{dhdl} has shown how making the compiler aware of design parameters like pipelining, unrolling factors, and tile sizes can be used to speed up and automate parameter space exploration. Abstract hardware languages should therefore include both language and compiler support for design space parameters.
+about the parallelizations of loops that iterate over tiles as well as loops that iterate within these tiles.
+Abstract hardware languages should therefore include both language and compiler support for design space parameters.
 
-%In hardware design, scheduling of operations in terms of pipelining and parallelizing various parts of a program, can be challenging. Programmers attempting to optimize an application's performance must account for memory access hazards and complicated design space tradeoffs between scheduling choices.
+\section{Motivation for a New Hardware Abstraction}
+Previous work on generating FPGA accelerators has focused on various aspects of the points
+mentioned above. Here we provide an overview of this work.
 
-A primary requirement for good accelerator design tools is the ability
-to capture and represent design points along all important dimensions.
-Specifically, design tools must be able to capture
-application-level parameters (e.g., input sizes, bitwidth, data layout),
-architectural parameters (parallelism factors, buffer sizes, banking factors
-pipelining levels, off-chip memory streams) and microarchitectural parameters
-(e.g., on-chip memory word width). Having a representation rich in parallelism
-information allows for more accurate estimations, thorough design space
-exploration, and efficient code generation.
+High-level synthesis (HLS) tools such as LegUp~\cite{legup-tecs} and Vivado HLS~\cite{vivadohls} (previously AutoPilot)~\cite{cong11hls}
+synthesize hardware from C. These tools provide estimates of the cycle count, area and power consumption
+along with hardware generation. However, imperative design descriptions place greater burden on
+the compiler to discover parallelism, pipeline structure and memory access patterns.
+The absence of explicit parallelism often leads to conservative compiler analyses
+producing sub-optimal designs. While some tools allow users to provide compiler
+hints in the form of directives or pragmas in the source code, this approach
+fails to capture key points in the design space.
+\begin{figure}[ht]
+\begin{lstlisting}[mathescape=true, numbers=none, language=C]
+L1: for (int i=0; i<R; i++) {
+  #pragma HLS PIPELINE II=1
+  L11: for (int j=0; j<C; j++) {
+    sub[j] = y[i] ? x[i][j]-mu0[j] : x[i][j]-mu1[j];
+  }
+  L121: for (int j1=0; j1<C; j1++) {
+    L122: for (int j2=0; j2<C; j2++) {
+      sigma[j1][j2] += sub[j1]*sub[j2];
+    }
+  }
+}
+\end{lstlisting}
+\caption{GDA for high-level synthesis.}
+\label{fig:gda-hls}
+\end{figure}
+For example, consider Figure~\ref{fig:gda-hls} which represents the gaussian discriminant analysis (GDA)
+kernel. All loops in this kernel are parallel loops. One set of valid design points would be to implement $L1$
+as a coarse-grained pipeline with $L11$ and $L121$ as its stages. Commercial HLS tools support
+ limited coarse-grained pipelining, but with serveral restrictions. For example,
+the \emph{DATAFLOW} directive in Vivado HLS enables users to describe coarse-grained pipelines.
+However, the directive does not support arbitrarily nested coarse-grained pipelines,
+multiple producers and consumers between stages, or coarse-grain pipelining within a finite loop scope~\cite{vivadohls_ug}, as required in the outer loop in Figure~\ref{fig:gda-hls}.
+In addition, compile times for HLS can be long for large designs due to the complications that
+arise during scheduling~\cite{Aladdin}.
+Such limitations restrict the capability of HLS tools to explore more complex design spaces.
 
-In addition to application characteristics, both heterogeneity within FPGAs
-and low-level optimizations done by logic synthesis tools have
-significant impact on required design resources. FPGA resource
-utilization does not just depend on the compute and
-memory operations in a given design; a non-trivial amount of resources are typically used
-to establish static routing connections to move data between two points, often rendering them unavailable
-for ``real'' operations. In addition, low-level
-logic synthesis tools often perform optimizations like LUT-packing or logic duplication for signal fanout
-reduction that alter resource usage. Off-chip memory communication requires FPGA
-resources to implement various queues and control logic. Such effects from low-level tools
-must be factored into the design tools to provide accurate estimates of design resource requirements.
+Previous work~\cite{pouchet13fpga}
+explores combining HLS with polyhedral analysis to optimize input designs for locality
+and use estimates from HLS tools to drive design space exploration. While this captures a larger design
+space than previous work by including tile sizes, this approach is limited to the capabilities
+of the HLS tools and to benchmarks that have strictly affine data accesses. This paper improves
+upon previous work by modeling tiling
+parameters in addition to other design points like coarse-grained pipelining of imperfectly nested loops
+which are not supported by HLS tools, as well as data-dependent accesses which are not supported by polyhedral analysis but can be captured by parallel patterns.
 
-%\gist{Here is what we believe are requirements of a good tool}
-A good FPGA design tool should have the following features:
-\begin{itemize}
-  \item \emph{Representation}: The tool must internally represent hardware using a general and parameterizable
-    representation. This representation must preserve information regarding data locality,
-    memory access pattern and parallelism in the input at all levels of nesting.
-    Such a representation must be target-agnostic and should be targetable from high-level
-    language constructs.
-  \item \emph{Estimation}: The tool must quickly analyze a design in the above representation
-    and estimate metrics such as cycle counts and FPGA resource requirements for a target FPGA.
-  \item \emph{DSE}: The tool must be able to leverage the estimators to prune the large design search space,
-    walk the space of designs, and find the Pareto-optimal surface.
-  \item \emph{Generation}: The tool must be able to automatically generate hardware which can then be
-    synthesized and run on the target FPGA. Without this feature, hardware would typically
-    be generated using separate toolchains for estimation and generation, which makes
-    accurate estimation much harder.
-\end{itemize}
+Other related work~\cite{Deng,Bilavarn,MatchEst,Enzler,Bjureus} explore various ideas from analytical to empirical
+models for estimating latency and area of designs in high-level languages. However, these approaches do not
+consider complex applications with nested parallelism. Also, this previous work either ignores memory or has a relatively
+simple model for memory.
+
+To summarize, while HLS tools provide an abstracted view of hardware, their
+ad-hoc mix of software and hardware abstractions leads to a variety of problems
+with properly describing the desired memory hierarhcy and control for the design,
+and leads to long compile times which are not amenable to design parameter tuning.
+These limitations suggest that a new hardware abstraction is required to target
+when compiling from high level DSLs, ideally one which is built from the ground up
+with the above requirements in mind.
+
+% A primary requirement for good accelerator design tools is the ability
+% to capture and represent design points along all important dimensions.
+% Specifically, design tools must be able to capture
+% application-level parameters (e.g., input sizes, bitwidth, data layout),
+% architectural parameters (parallelism factors, buffer sizes, banking factors
+% pipelining levels, off-chip memory streams) and microarchitectural parameters
+% (e.g., on-chip memory word width). Having a representation rich in parallelism
+% information allows for more accurate estimations, thorough design space
+% exploration, and efficient code generation.
+%
+% In addition to application characteristics, both heterogeneity within FPGAs
+% and low-level optimizations done by logic synthesis tools have
+% significant impact on required design resources. FPGA resource
+% utilization does not just depend on the compute and
+% memory operations in a given design; a non-trivial amount of resources are typically used
+% to establish static routing connections to move data between two points, often rendering them unavailable
+% for ``real'' operations. In addition, low-level
+% logic synthesis tools often perform optimizations like LUT-packing or logic duplication for signal fanout
+% reduction that alter resource usage. Off-chip memory communication requires FPGA
+% resources to implement various queues and control logic. Such effects from low-level tools
+% must be factored into the design tools to provide accurate estimates of design resource requirements.
+%
+% %\gist{Here is what we believe are requirements of a good tool}
+% A good FPGA design tool should have the following features:
+% \begin{itemize}
+%   \item \emph{Representation}: The tool must internally represent hardware using a general and parameterizable
+%     representation. This representation must preserve information regarding data locality,
+%     memory access pattern and parallelism in the input at all levels of nesting.
+%     Such a representation must be target-agnostic and should be targetable from high-level
+%     language constructs.
+%   \item \emph{Estimation}: The tool must quickly analyze a design in the above representation
+%     and estimate metrics such as cycle counts and FPGA resource requirements for a target FPGA.
+%   \item \emph{DSE}: The tool must be able to leverage the estimators to prune the large design search space,
+%     walk the space of designs, and find the Pareto-optimal surface.
+%   \item \emph{Generation}: The tool must be able to automatically generate hardware which can then be
+%     synthesized and run on the target FPGA. Without this feature, hardware would typically
+%     be generated using separate toolchains for estimation and generation, which makes
+%     accurate estimation much harder.
+% \end{itemize}
