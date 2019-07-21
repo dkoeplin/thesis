@@ -1,0 +1,15 @@
+\chapter{The Spatial Compiler}
+\label{compiler}
+
+Since Spatial is designed to capture algorithms that are intended to run on reconfigurable architectures,
+which gives rise to analyses and optimizations that are not used in software compilers.
+In this chapter, we describe the compiler's intermediate representation and its key passes, as summarized in Figure~\ref{fig:compilerflow}.
+
+When targeting FPGAs, the Spatial compiler provides source-to-source translations from applications in the Spatial abstraction to synthesizable hardware descriptions in Chisel RTL~\cite{chisel}.
+Host (CPU) code is generated in C++.
+While
+details of targeting Plasticine are discussed in prior work~\cite{plasticine}.
+
+\input{5-compiler/1-IR}
+\input{5-compiler/2-compiler}
+\input{5-compiler/3-evaluation}

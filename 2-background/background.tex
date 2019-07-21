@@ -42,6 +42,7 @@ which can be lowered to another form prior to execution.
 
 
 \section{Parallel Patterns}
+\label{parallel-patterns}
 
 Parallel patterns like \emph{Map}, \emph{Reduce}, and \emph{GroupBy} are abstractions
 borrowed from the functional programming paradigm
@@ -122,7 +123,7 @@ We therefore also restrict this operation to one-dimensional domains.
 
 \begin{figure}
 \centering
-\begin{lstlisting}[language=Scala]
+\begin{lstlisting}[language=ScalaBig]
 //data to be clustered, size n x d
 val points: Array[Array[Float]] = ...
 
@@ -150,7 +151,7 @@ val newCentroids = groupedPoints.map { case (k,v) =>
 \end{figure}
 
 \begin{figure}\centering
-\begin{lstlisting}[language=Scala]
+\begin{lstlisting}[language=ScalaBig]
 points: Array2D[Float](n,d)    // data to be clustered
 centroids: Array2D[Float](k,d) // current centroids
 

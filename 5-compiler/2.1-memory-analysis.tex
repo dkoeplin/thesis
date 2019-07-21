@@ -1,3 +1,6 @@
+\subsection{Memory Analysis}
+\label{memopts}
+
 \begin{figure}
 \centering
 \hspace{5pt}
@@ -64,6 +67,31 @@ end function
 \caption{Banking and buffering algorithm for calculating instances of on-chip memory $m$.}
 \label{fig:bank_alg}
 \end{figure}
+
+Loop parallelization only serves to improve performance if there is sufficient on-chip bandwidth to feed the duplicated computation.
+Spatial's memory analysis banks and buffers on-chip memories to maximize this available on-chip read and write bandwidth.
+Memory banking, also called data partitioning, is the process of dividing a memory's address space across multiple physical instances in order to create
+additional ports for concurrent accesses within the same controller.
+Partitioning is possible when the access patterns are statically predictable and guaranteed to never conflict access the same port/bank.
+While a single port can be time multiplexed, this entirely negates the benefits of parallelization by increasing the whole pipeline's required initiation interval.
+Note that while banking can trivially be achieved by memory duplication, Spatial aims to also minimize the total amount of memory resources.
+
+Spatial leverages the memory partitioning strategy based on conflict polytope emptiness testing described by Wang et. al.~\cite{Wang_banking}. We extend this strategy by accounting for random access patterns and memory accesses across nested loops. Random accesses are modeled as additional dimensions in the conflict polytope as if they were additional loop iterators. Spatial minimizes the number of random access symbols used in this way by identifying affine combinations of random values. For example, an access to a memory at address $x$ and $x+1$ only requires one random variable, $x$, as the second is a predictable, affine function of the first.
+Spatial also supports banking per dimension to account for cases where only some dimensions are accessed predictably.
+
+Non-addressed memories like \texttt{\small{FIFOs}} and \texttt{\small{FILOs}} are modeled as addressed memories.
+Each access to these memory types is represented as a linear access of all loop iterators around the memory access relative to the memory's definition. Spatial forbids parallelization of outer loops around non-addressed accesses, as this violates the guarantee of equivalent behavior to sequential execution.
+
+To handle multiple pipelined accesses across stages within an outer loop, Spatial also automatically buffers on-chip memories.
+Buffering creates multiple copies of the
+same memory for maintaining versions of the data across overlapped loop iterations.
+Without this optimization, pipeline parallel accesses to the same memory across different stages of a coarse-grain pipeline would not be able to run concurrently.
+See Appendix~\ref{banking-appendix} for details on how both banking and buffering are computed.
+
+
+For example, as shown in Figure~\ref{fig:controlTree}, \texttt{\small{tileB}} has two parallelized accesses, the load on line 42 and the read on line 48. If all (implicit and explicit) parallelization factors are set to 2, this corresponds to 4 accesses per loop. Spatial then builds the access polytope corresponding to all accesses in each loop, and determines the banking strategy that works for both loops. In this example, this means the SRAM will be banked such that each element within a 2x2 square will reside
+in a different physical bank to allow fully parallel access. If the \texttt{\small{MemReduce}} on line 34 is pipelined, \texttt{\small{tileB}} will be double buffered to protect the reads (line 48) in one iteration of the outer loop
+from the writes (line 42) in the next iteration.
 
 Figure~\ref{fig:bank_alg} gives pseudocode for Spatial's algorithm to bank and buffer accesses to a given memory \emph{m} across loop nests. For each access $a$ to $m$, we first define an iteration domain $D$ for that access. This domain is the multi-dimensional space of possible values of all loop iterators for all loops which contain $a$ but which do not contain $m$.
 

@@ -1,4 +1,4 @@
-\subsection{Area and Runtime Estimation}
+\section{Area and Runtime Estimation}
 \label{sec:modeling}
 In this section, we describe our modeling methodology. Our models account for the various
 design parameters for each Spatial node, as well as optimizations done by low-level logic
@@ -121,7 +121,23 @@ compute units with two registers each. This gives us the final estimation for LU
 
 %We use the Encog machine learning library~\cite{encog} to implement our neural network.
 
-\subsection{Design space exploration}
+\section{Design Space Exploration}
+\label{dse}
+\todo{CLEAN UP, deduplicate}
+
+The scheduling and memory banking options identified by the compiler, together with loop parallelization and tile size parameters, forms a design space for the application.
+The design tuning pass is an optional compiler pass which allows for fast exploration of this design space in order to make area/runtime design tradeoffs.
+When design tuning is enabled, it repeatedly picks design points and evaluates them by rerunning the control scheduling, memory analysis, and estimation analysis passes. The output from this search is a single set of parameters from the Pareto frontier.
+
+Unfortunately, application design spaces tend to be extremely large, and exhaustive search on an entire space is often infeasible. Of the benchmarks discussed in Section~\ref{evaluation},
+only BlackScholes has a relatively small space of about $80,000$ points. While this space can be explored exhaustively by Spatial in a few minutes, other spaces are much larger, spanning $10^6$ to $10^{10}$ points and
+taking hours or days to exhaustively search. For example, even with the few explicit design parameters exposed in the code in Figure~\ref{fig:matmult}, when combined with implicit pipelining and parallelization parameters, this code already has about $2.6\times10^8$ potential designs.
+DHDL~\cite{dhdl} employed random search after heuristic pruning, reducing the total space by two to three orders of magnitude. However, this approach has high variance on larger design spaces and may inadvertently prune desirable points.
+
+To reduce the variance on larger design spaces, Spatial's design space exploration flow integrates an active learning-based autotuner called HyperMapper~\cite{Bodin2016:PACT16,NardiBSVDK17,Saeedi_ICRA_2017}.
+HyperMapper is a multi-objective derivative-free optimizer (DFO), and has already been demonstrated on the SLAMBench benchmarking framework \cite{nardi2015introducing}.
+HyperMapper creates a surrogate model using a Random Forest regressor, and predicts the performance over the parameter space. This regressor is initially built using only few hundred random design point samples and is iteratively refined in subsequent active learning steps.
+
 Our design space exploration tool uses the resource and cycle count estimates
 to explore the space of designs described by the parameters in Table~\ref{t-hwtemplates}.
 As we are dealing with large design spaces on the order of millions of points even for small benchmarks,

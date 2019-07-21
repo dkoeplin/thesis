@@ -1,29 +1,11 @@
-\section{Pattern Tiling Transformation}
-\label{transformations}
-
-One of the key challenges of generating efficient custom architectures from
-high level languages is in coping with arbitrarily large data structures.
-Since main memory accesses are expensive and resources on the FPGA are limited,
-our goal is to store a reasonably sized working set in the FPGA's local memory
-for as long as possible. Ideally, we also want to hide memory transfer latencies
-by overlapping communication with computation using prefetching hardware.
-
-To this end, we first describe a method for automatically tiling parallel
-patterns to improve program locality and data reuse.
-Like classic loop tiling, our pattern tiling method is composed of two
-transformations: strip mining and interchange.
-We assume here that our input is a PPL representation of a program and that
-well known target-agnostic transformations like fusion, code motion, and struct
-unwrapping have already been run.
-
 \input{3-delite/figs/stripmining}
 
-\subsection{Strip mining}
+\section{Strip Mining}
 We first examine how parallel patterns can be strip mined.
 In imperative programs, \emph{for} loops are strip mined using a single transformation
 rule: split the loop's domain to create a pair of nested \emph{for} loops.
-The rules for parallel pattern strip mining are similarly straightforward,
-but are pattern-specific.
+The rules for parallel pattern strip mining are similarly straightforward
+but pattern-specific.
 
 The strip mining algorithm is defined here using two passes over the IR.
 The first pass partitions each pattern's iteration domain \emph{d} into tiles of
@@ -32,10 +14,10 @@ The outer pattern operates over the strided index domain, expressed here as
 \emph{d/b}, while the inner pattern operates on a tile of size \emph{b}.
 For the sake of brevity this notation ignores the case where \emph{b} does not
 perfectly divide \emph{d}, but this case is solved in practice with the
-addition of \emph{min} checks on the domain of the inner loop.
+addition of bounds checks on the domain of the inner loop.
 
-Table~\ref{table:stripmining} gives an overview of the rules used by transformer
-(denoted \emph{T}) to strip mine parallel patterns.
+Table~\ref{table:stripmining} gives an overview of the rules used by the transformer
+(denoted $T$) to strip mine parallel patterns.
 In addition to splitting up the domain, patterns are transformed by recursively
 strip mining all functions within that pattern.
 Map is strip mined by reducing its domain and range and nesting it within a MultiFold.
@@ -48,8 +30,8 @@ breaking them up into a set of perfectly nested patterns of the same type as the
 
 The second strip mining pass converts array slices and accesses with statically predictable access patterns into slices and accesses of larger, explicitly defined
 array memory tiles. We define tiles which have a size statically known to fit on the FPGA using array copies.
-Copies generated during strip mining can then be used to infer buffers during hardware generation.
-%These buffers allow better usage of burst reads and writes from main memory and enable overlapping of compututation and communication using hardware prefetching.
+Copies generated during strip mining will be used to infer buffers during hardware generation.
+These buffers in turn will allow better usage of burst reads and writes from main memory and enable overlapping of compututation and communication using hardware prefetching.
 Array tiles which have overlap, such as those generated from sliding windows in convolution, are marked with metadata in the IR as having some reuse factor.
 Array copies with reuse have generation rules which minimize the number of redundant reads to main memory when possible.
 
@@ -61,11 +43,14 @@ We assume in these examples that common subexpression elimination (CSE) and code
 move array tiles out of the innermost patterns. In these examples, strip mining creates tiled copies of input collections that
 we can later directly use to infer read buffers.
 
-\subsection{Pattern Interchange}
+\section{Pattern Interchange}
+
+\input{3-delite/figs/interchange}
+
 Given an intermediate representation with strip mined nested parallel patterns, we now need to interchange patterns to increase the reuse
 of newly created data tiles. This can be achieved by moving strided patterns out of unstrided patterns. However, as with imperative loops,
 it is not sound to arbitrarily change the order of nested parallel patterns.
-We use two rules for pattern interchange adapted from a previously established \emph{Collect}-\emph{Reduce} reordering rule for computation on clusters~\cite{brown16clusters}.
+We adapt two rules for pattern interchange from a previously established \emph{Collect}-\emph{Reduce} reordering rule for computation on clusters~\cite{brown16clusters}.
 These rules both match on the special case of MultiFold where every iteration updates the entire accumulator, which we refer to here as a \emph{fold}.
 The first interchange rule defines how to move a scalar, strided \emph{fold} out of an unstrided Map, transforming the nested loop into a strided \emph{fold} of a Map.
 Note that this also changes the combination function of the \emph{fold} into a Map.
@@ -82,16 +67,48 @@ increased buffer usage requires more complex cost modeling.
 We use a simple heuristic to determine whether to split fused loops: we split and interchange patterns only when
 the intermediate result created after splitting and interchanging is statically known to fit on the FPGA. This handles the simple case
 where the FPGA has unused on-chip buffers and allocating more on-chip memory guarantees a decrease in the number of main memory reads.
-Future work will examine ways to statically model the tradeoff between main memory accesses and local buffers near 100\% on-chip memory utilization.
-
-\input{3-delite/figs/interchange}
 
 Figure~\ref{fig:interchange-examples} shows a simple example of the application of our pattern interchange rules on matrix multiplication.
-We assume here that code motion has been run again after pattern interchange has completed.
+We assume here that loop invariant code motion has been run again after pattern interchange has completed.
 In matrix multiplication, we interchange the perfectly nested strided MultiFold and the unstrided Map.
 This ordering increases the reuse of the copied tile of matrix \emph{y} and changes the scalar reduction into a tile-wise reduction.
 Note that the partial result calculation and the inner reduction can now be vertically fused.
 
+\section{Coarse-Grained Pipelining}
+To generate high performance hardware from parallel patterns, it is insufficient
+to exploit only a single level of parallelism. Exploiting nested parallelism
+requires mechanisms to orchestrate the flow of data through multiple pipeline
+stages while also exploiting parallelism at each stage of execution.
+The end result are pipelined loops which are themselves pipelined with other
+pipelined loops and memory controllers, resulting in a hierarchy of pipelines,
+commonly referred to as a coarse-grained pipeline (or occassionally, ``metapipeline'').
+
+Most FPGA-specific control scheduling is done by the lower level compiler as described in Chapter~\ref{scheduling}. However, unlike the lower level Spatial compiler, the higher level
+compiler operates on parallel patterns which have inherent parallelism information.
+We therefore perform a simple pipeline schedule analysis in the high level compiler
+so that the Spatial compiler is able to perform pipelining scheduling without
+also having to re-derive this parallelism information.
+
+Pipeline scheduling is done as a recursive traversal of the hierarchical IR.
+At each level, we create pipeline schedules by first performing a topological sort on the IR
+of the body of the current parallel pattern. The result is a list of stages,
+where each stage contains a list of patterns which can be run concurrently.
+Exploiting the pattern's semantic information, we then
+optimize the pipeline schedule by removing unnecessary memory transfers and redundant computation.
+For instance, if the output memory region of the pattern has been assigned to an array marked as a buffer,
+we do not generate unnecessary writes to main memory.
+
+Our functional representation of tiled parallel patterns
+can sometimes create redundant accumulation functions, for example, in cases where a MultiFold is tiled into a nested MultiFold. During scheduling we identify
+this redundancy and emit a single copy of the accumulator, removing the unnecessary intermediate buffer.
+Finally, in cases where the accumulator of a MultiFold cannot completely fit on-chip, we add a special
+forwarding path between the stages containing the accumulator. This optimization avoids redundant writes to memory and
+reuses the current tile.
+Once we have the final pipeline schedule for a parallel pattern,
+we mark the parallel pattern as a pipeline candidate and save the
+schedule as metadata for later use by the lower level Spatial compiler.
+
+\section{Example}
 
 \begin{figure}\small\centering
 \input{3-delite/figs/tilingKmeans}
@@ -102,14 +119,15 @@ clusters $k$. The number of features $d$ is not tiled in this example.}
 \label{fig:kmeans-example}
 \end{figure}
 
-\subsection{Example} We conclude this section with an example of tiling
+We next look at a full example of tiling and pipelining
 the $k$-means clustering algorithm, starting from the fused representation
 introduced in Figure~\ref{fig:kmeans-fused}. We assume here that we wish
 to tile the number of input points, \emph{n}, with tile size \emph{b$_0$} and
 the number of clusters, \emph{k}, with tile size \emph{b$_1$} but not the
 number of dimensions, \emph{d}. This is representative of machine learning
 classification problems where the number of input points and number of labels is
-large, but the number of features for each point is relatively small.
+large and potentially dynamic at runtime,
+but the number of features for each point is fixed and relatively small.
 
 Figure~\ref{fig:kmeans-example} gives a comparison of the $k$-means clustering
 algorithm after strip mining and after pattern interchange. During strip mining,
@@ -124,16 +142,45 @@ tile is then perfectly nested within the iteration over the points.
 Interchanging these two iterations allows us to reuse the centroids tile across
 points, thus decreasing the total number of main memory reads for this array
 by a factor of \emph{b$_0$}. This decrease comes
-at the expense of changing the intermediate (distance, label) pair for a single
+at the expense of changing the intermediate \emph{(distance, label)} pair for a single
 point to a set of intermediate pairs for an entire tile of \emph{points}.
 Since the created intermediate result
 has size 2\emph{b$_0$}, we statically determine that this is an advantageous
 tradeoff and use the split and interchanged form of the algorithm.
 
-Note that while the rules we outline here for automatic tiling of parallel patterns are
-target-agnostic. However, tile copies should only be made explicit for devices
+Note that the rules we outline here for automatic tiling of parallel patterns are
+generally target-agnostic. However, tile copies should only be made explicit for devices
 with scratchpad memory. Architectures with hierarchical memory systems
 effectively maintain views of subsections of memory automatically through
 caching, making explicit copies on these architectures a waste of both
 compute cycles and memory. We discuss how tile sizes like \emph{b$_0$} and
-\emph{b$_1$} can be selected automatically in Chapter~\todo{?}.
+\emph{b$_1$} can be selected automatically in Chapter~\ref{dse}.
+
+\begin{figure*}
+\centering
+\includegraphics[width=6in]{3-delite/figs/kmeans-blockdiagram.pdf}
+\caption{Block diagram of hardware generated for the $k$-means application.}
+\label{fig:metapipelining}
+\end{figure*}
+
+Figure~\ref{fig:metapipelining} shows a block diagram of the hardware generated for the $k$-means application.
+For simplicity, this diagram shows the case where the \emph{centroids} array completely fits on-chip, meaning
+we do not tile either the number of clusters \emph{k} or the number of features \emph{d}.
+
+The resulting hardware design contains three sequential steps.
+The first step (Pipe~0) preloads the entire \emph{centroids} array into a buffer.
+The second step (Metapipeline A) is a coarse-grained pipeline which consists of three stages with buffers to manage communication between the stages.
+These three stages directly correspond to the three main sections of the MultiFold (Figure~\ref{fig:kmeans-fused}, line~5) used to sum and count the input points as grouped by their
+closest centroid. The first stage (Pipe~1) loads a tile of the \emph{points} array onto the FPGA. Note that this stage was double buffered by the Spatial compiler to
+enable hardware prefetching. The second stage (Pipe~2) computes the index of the closest centroid using vector compute blocks and a scalar reduction
+tree. The third stage (Pipe~3 and Pipe~4) increments the count for this minimum index and adds the current point to the corresponding location in the
+buffer allocated for the \emph{new centroids}.
+
+The third step (Metapipeline B) corresponds with the second outermost parallel pattern in the $k$-means application.
+This step streams through the point sums and the centroid counts, dividing each sum by its corresponding count. The resulting new centroids
+are then written back to main memory using a tile store unit for further use on the CPU.
+
+Our automatically generated hardware design for the core computation of $k$-means is very similar to the manually optimized design described by Hussain et al.~\cite{hwkmeans}.
+While the manual implementation assumes a fixed number of clusters and a small input dataset which can be preloaded onto the FPGA, we use tiling to automatically generate
+buffers and tile load units to handle arbitrarily sized data. Like the manual implementation, we automatically parallelize across centroids
+and vectorize the point distance calculations. As we see from the $k$-means example, our approach enables us to automatically generate high quality hardware implementations which are comparable to manual designs.

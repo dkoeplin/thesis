@@ -1,6 +1,48 @@
-\chapter{High Level Compilation}
+\chapter{The High Level Compiler}
 \label{delite}
 
+We begin our description of the process for compiling DSLs to FPGAs with
+the high level compiler. The system diagram for this high level compiler is shown in
+Figure~\ref{fig:delite-diag}.
+As shown in this figure, the purpose of the high level compiler is to take
+programs represented in the parallel patterns described in
+Chapter~\ref{parallel-patterns} and lower them to a form which can be more easily
+translated to hardware. For the purposes of this chapter, we will assume the
+target DSL already has a lowering path to parallel patterns. While the
+transformations described in this chapter are generally applicable to any
+target hardware, we will discuss them with particular focus on their implications
+when targeting FPGAs.
+
+One of the key challenges of generating efficient custom architectures from
+high level languages is in coping with arbitrarily large data structures.
+Since main memory accesses are expensive and resources on the FPGA are limited,
+our goal is to store a reasonably sized working set in the FPGA's local memory
+for as long as possible. Ideally, we also want to hide memory transfer latencies
+by overlapping communication with computation using prefetching hardware.
+
+To this end, in this chapter we describe a method for automatically tiling parallel
+patterns to improve program locality and data reuse.
+Like classic loop tiling, our pattern tiling method is composed of two
+transformations: strip mining and interchange.
+
+As shown in Figure~\ref{fig:delite-diag}, the high level compiler is also responsible
+for performing various well known, target-agnostic transformations like loop fusion,
+loop invariant code motion, and common subexpression elimination (CSE).
+We refer the reader to prior work~\cite{rompf12optimizing,brown16clusters} for
+detailed descriptions of these other transformations.
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{3-delite/figs/delite-diag}
+\caption{\label{fig:delite-diag}Block diagram of the high level compiler.
+Green boxes denote IR. Directed boxes denote compiler passes, with blue boxes
+denoting graph transformations and yellow boxes denoting analysis passes.
+This compiler is responsible for performing various target-agnostic optimizations
+on the input program, including loop fusion, loop invariant code motion, common
+subexpression elimination (CSE),
+and parallel pattern tiling. It also performs basic pipeline schedule analysis
+and annotates this information for the lower level compiler.}
+\end{figure*}
+
 \input{3-delite/1-compiler}
-\input{3-delite/2-generation}
-\input{3-delite/3-evaluation}
+\input{3-delite/2-evaluation}
