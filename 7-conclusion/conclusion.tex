@@ -1,17 +1,72 @@
 \chapter{Conclusions}
 \label{conclusion}
-\todo{Conclusion!}
+With the end of Dennard scaling and the slow death of Moore's Law, the period
+of ``free'' performance improvements on conventional CPU architectures is coming
+to a close. As it does, computer architects and computer scientists alike are
+looking to more specialized hardware architectures to continue improving
+runtimes, throughput, and energy efficiency for performance critical applications.
 
-% Discussion topics
-% System
-%  - Increasing popularity of reconfigurable hardware solutions for ML, etc.
-% Tiling
-%  - Happy medium between patterns and polyhedral?
-% DSE
-%  - Luigi paper
-% Banking
-%  - Matt's work on improving banking
-%  - Theoretical improvements to worst case runtime?
+While reconfigurable architectures like FPGAs are a natural fit for these
+specialized hardware designs, their adoption has been historically limited by
+their low level programming models. While ``C-to-gates'' style
+high level synthesis tools have sought to fill this gap,
+their ad-hoc mixture between hardware and software have made them
+difficult to adopt when implementing optimized hardware designs.
+
+Meanwhile, as performance requirements have been increasing, the demands for
+improvements in abstractions in programming languages have also been increasing.
+This is most clear in data analytics, and particularly in machine learning, where
+new domain-specific languages are consistently being developed and improved.
+
+If both of these trends continue, it is likely that this will result in a situation
+where huge amounts of performance-critical code is being initially written and
+tested in high level, hardware target agnostic domain specific languages.
+This provides a perfect opportunity for compiler development.
+
+In this dissertation, we describe a system which compiles high level domain
+specific languages to reconfigurable architectures, with a particular focus on FPGAs.
+We described several high level transformations required on a parallel pattern IR
+in order to prepare the representation for hardware-specific lowering.
+We then discussed the limitations with lowering to existing high level synthesis abstractions,
+both in terms of their slow compile times - limiting design tuning opportunities - and their
+inability to exploit arbitrary levels of nested parallelism to achieve better performance.
+We instead proposed a new hardware abstraction for our system called Spatial,
+which is designed from the ground up to serve as an intermediary between
+high level languages and low level hardware designs.
+We showed that, using this new abstraction, our system can
+tune explore design parameter spaces 279 to 6533 times
+faster than a commercial high-level synthesis tool, and produce designs with average speedups
+of $2.9\times$ over SDAccel.
+The Spatial abstraction is also coupled with a frontend language which is more productive for power users,
+which we showed to have an average of 42\% fewer lines of code when defining the same applications.
+
+Going forward, there are still a number of open research directions for this system.
+While we evaluated applications directly written in Spatial to provide a fair
+comparison to HLS tools at roughly the same level of abstraction, no study has yet
+been done on the source or degree of overheads of automatically produced designs
+from high level DSLs. Further investigation here would ultimately yield a more robust
+and tuned lowering process from higher level languages.
+
+The current Spatial compiler has a number of areas where it can be further expanded and
+improved. The memory banking analysis pass, for example, is generally fast, but has
+an extremely long worst case running time. This comes down to its reliance on
+iterative conflict polytope emptiness testing~\cite{Wang_banking}. Current work
+at Stanford is looking at how to use heuristics to speed this up, but more theoretical
+work on a faster solver for the conflict polytope could improve the worst case time.
+
+The design tuning strategies discussed in Chapter~\ref{dse} show the potential for
+practical application of other design space exploration or hyper-parameter tuning
+strategies. While the integration with HyperMapper presented here was a preliminary
+evaluation, further work evaluating HyperMapper more in depth against random search
+with heuristic pruning is ongoing.
+
+The growing adoption of domain specific languages and the growing need for hardware
+acclerators presents a huge opportunity for compiler development. The target-agnostic
+nature of DSLs, combined with the huge design spaces of hardware accelerator designs,
+presents a great degree of freedom for optimizations and program transformations
+for compilers. Our system shows how these opportunities can be taken advantage of
+in order to both present users with an extremely high level programming model while
+also producing performant hardware accelerator designs. 
 
 The Spatial language and compiler is an ongoing, open source project at Stanford.
 Other related documentation, publications, and code releases can be found
