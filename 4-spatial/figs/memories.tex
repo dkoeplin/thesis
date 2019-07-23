@@ -1,6 +1,5 @@
-\newsavebox{\firstlisting}
-\begin{lrbox}{\firstlisting}
-\begin{lstlisting}[language=Spatial,linewidth=0.6\textwidth]
+\begin{figure}
+\centering\hspace{40pt}\begin{lstlisting}[language=SpatialTable]
 val data   = loadData("data.csv")
 val dram1D = DRAM[Float](10000)
 val dram2D = DRAM[Float](128, 320000)
@@ -40,12 +39,6 @@ rfile <<= buffer(i::i+6)
 // Store current value of reg into sram1D at address 32
 sram1D(32) = reg.value
 \end{lstlisting}
-\end{lrbox}
-
-\begin{figure*}
-\centering
-\usebox{\firstlisting}
-\caption{Examples of memory operations in Spatial.
-}
+\caption{Examples of memory operations in Spatial.}
 \label{f:memexamples}
-\end{figure*}
+\end{figure}

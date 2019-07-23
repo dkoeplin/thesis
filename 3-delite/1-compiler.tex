@@ -152,7 +152,7 @@ tradeoff and use the split and interchanged form of the algorithm.
 Note that the rules we outline here for automatic tiling of parallel patterns are
 generally target-agnostic. However, tile copies should only be made explicit for devices
 with scratchpad memory. Architectures with hierarchical memory systems
-effectively maintain views of subsections of memory automatically through
+effectively maintain memory views automatically through
 caching, making explicit copies on these architectures a waste of both
 compute cycles and memory. We discuss how tile sizes like \emph{b$_0$} and
 \emph{b$_1$} can be selected automatically in Chapter~\ref{dse}.

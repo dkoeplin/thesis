@@ -82,9 +82,8 @@ software pipelining. Not only does this approach generate needlessly large desig
 it also suffers from long compilation times due to the complexity in scheduling a large number of unrolled instructions.
 More recent works like ElasticFlow~\cite{elasticFlow} and CGPA~\cite{cgpa} generate coarse-grained
 pipelines using FIFOs in between stages for communication. However, they handle only a restricted form of data access
-patterns and a restricted number of nesting levels. Our metapipelining technique is more general than previous approaches because:
-(i) metapipeline stages are decoupled using double buffers, therefore not restricting data access patterns, (ii) metapipelines
-are easily composed and nested to any number of levels, and (iii) metapipelines can handle
+patterns and a restricted number of nesting levels. Our coarse-grained pipelining technique is more general than previous approaches because:
+(i) coarse-grained pipeline stages are decoupled using double buffers, therefore not restricting data access patterns, (ii) our pipelined controllers are easily composed and nested to any number of levels, and (iii) these pipelined controllers can handle
 dynamic rate mismatches as they use asynchronous handshaking for inter-stage synchronization, thereby obviating the need
 to calculate static initiation interval as well as knowing loop trip counts ahead of time.
 
@@ -101,10 +100,10 @@ FPGAs~\cite{george14fpl}. By exploiting the access patterns of nested patterns
 to store sequential memory accesses to on-chip memory and parallelizing the
 computation with strip-mining, the compiler can generate hardware that
 efficiently utilizes memory bandwidth.  However, the compiler does not
-automatically tile patterns for data locality or implement metapipelines
+automatically tile patterns for data locality or implement nested pipelines
 for nested parallel patterns, which we show are essential components for generating efficient hardware. Overall, our work is the first to show a complete method for
 automatically tiling parallel patterns to improve locality for individual compute units and a process
-for inferring hardware metapipelines from nested parallel patterns.
+for inferring nested hardware pipelines from nested parallel patterns.
 
 Recent work has explored using polyhedral analysis with HLS to optimize for data
 locality on FPGAs~\cite{pouchet13fpga}.  Using polyhedral analysis, the compiler

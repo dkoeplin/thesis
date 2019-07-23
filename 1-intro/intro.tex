@@ -60,10 +60,13 @@ the language's compiler does not allow pipelining of loops at arbitrary nesting 
 When using high level synthesis tools, programmers must keep in mind that,
 despite the software programming abstractions, they must employ hardware,
 not software, optimization techniques when using HLS tools~\cite{nane2016survey}.
-Additionally, compile times for HLS can often be long for large designs due to
+In ``C-to-gates'' style HLS tools which relies on hardware pragmas
+for hardware-specific information, the addition, changing, or
+removal of various pragmas can become more of a guess-and-check
+process. Additionally, compile times for HLS can often be long for large designs due to
 complications that arise during pipeline scheduling~\cite{Aladdin}.
 Such limitations restrict the user's ability to explore more complex design spaces.
-For most domain experts, this makes it challenging to write code which produces fully optimized designs.
+For most domain experts, the combination of these factors makes it challenging to write code which produces fully optimized designs.
 
 \section{Domain-Specific Languages}
 % Based on recent trends in machine learning and and data analytics, high level
@@ -193,9 +196,7 @@ Kevin Brown~\cite{kevin-thesis}
 showed the performance benefits of parallel pattern
 could be extended across multi-core and cluster CPUs, while
 HyoukJoong Lee showed that the same approach can be used to target GPUs
-and FPGAs~\cite{hj-thesis}. While the focus of this work is on targeting FPGAs,
-we briefly show in Chapter~\ref{plasticine-evaluation} that this approach
-can be generalized to coarse-grained reconfigurable architectures (CGRAs) as well.
+and FPGAs~\cite{hj-thesis}.
 
 The key contribution of this work is the proposal and demonstration of a system
 which generates efficient, performant hardware accelerator designs

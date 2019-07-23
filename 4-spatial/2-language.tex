@@ -101,21 +101,22 @@ The rules used to schedule controllers are discussed further in Chapter~\ref{sch
 %manner and transform all of the relevant memory elements into their proper buffered elements.
 
 
-\subsection{Memories}
 
-\include{4-spatial/figs/memories}
+\subsection{Memories}
 
 Spatial offers a variety of memory templates that enable the user to abstractly but explicitly control allocation of data across an accelerator's heterogeneous memory.
 The Spatial compiler is aware of all of these memory types and is able to automatically optimize each of them.
 
-Spatial's ``on-chip'' memories, overviewed in Figure~\ref{t:syntaxTable}c, represent the creation of statically sized, logical memory spaces.
+Spatial's ``on-chip'' memories represent statically sized, logical memory spaces.
 Supported memory types include read-only lookup-tables (\texttt{\small{LUTs}}), scratchpads (\texttt{\small{SRAM}}), line buffers (\texttt{\small{LineBuffer}}), fixed size queues and stacks (\texttt{\small{FIFO}} and \texttt{\small{LIFO}}),  registers (\texttt{\small{Reg}}), and register files (\texttt{\small{RegFile}}).
 Figure~\ref{f:memexamples} shows some examples of operations on instances of these memory types.
 These memories are always allocated using resources on the accelerator, and by default are not accessible by the host.
 While each memory is guaranteed to appear coherent to the programmer, the number and type of resources used to implement each memory is not restricted.
-With the exception of \texttt{\small{LUTs}} and \texttt{\small{Regs}} with explicit initial values, the contents of a memory is undefined upon allocation.
+With the exception of explicitly declared initial values, the contents of a memory is undefined upon allocation.
 These rules give the Spatial compiler maximum freedom to optimize memory access latency and resource utilization in the context of the entire application.
 Depending upon access patterns, the compiler may automatically duplicate, bank, or buffer the memory, provided the behavior of the final logical memory is unchanged.
+
+\include{4-spatial/figs/memories}
 
 ``Shared'' memories are allocated by the host CPU and accessible by both the host and the accelerator.
 These memories are typically used in the offload model to transfer data between the host and the accelerator.
@@ -176,6 +177,9 @@ An application's implicit and explicit application parameters together define a 
 
 \subsection{Examples}
 
+\input{4-spatial/figs/example1}
+\input{4-spatial/figs/example2}
+
 We conclude discussion of the Spatial language with two examples.
 Figure~\ref{fig:firfilter} shows a streaming implementation of a finite impulse response (FIR) filter.
 This example demonstrates how, when using \texttt{\small{Stream(*)}}, Spatial's semantics are similar to other dataflow-oriented streaming languages. The body of the loop on line 24 is run each time a valid element appears at the \texttt{\small{StreamIn}} input. Spatial pipelines this body to maximize its throughput.
@@ -186,6 +190,3 @@ Figure~\ref{fig:sortMerge} shows a simple implementation of a fixed size merge s
 The language's distinction between on-chip and off-chip memory types makes writing and reasoning about tiled designs like this one much more natural.
 This implementation uses a statically sized \texttt{\small{SRAM}} and two \texttt{\small{FIFOs}} to split and order progressively larger size chunks of the local data.
 The chunk size is determined by the outermost loop on line 8, and increments in powers of two. This behavior is best expressed in Spatial as an FSM.
-
-\input{4-spatial/figs/example1}
-\input{4-spatial/figs/example2}

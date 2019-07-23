@@ -63,7 +63,7 @@ Using these models, we run a pair of analysis passes over the application's inte
 \subsubsection{Cycle Count Estimation}
 In the first analysis pass, we estimate the total runtime of the design on the FPGA.
 Since the Spatial intermediate representation is hierarchical in nature, this pass is done recursively.
-The total runtime of \emph{MetaPipe} and \emph{Sequential} nodes is calculated first by determining
+The total runtime of coarse-grained pipelines and sequential controllers is calculated first by determining
 the runtime of all controller nodes contained within them. The total propagation delay of a single
 iteration of a \emph{Pipe} is the length of the body's critical path, calculated using a depth first
 search of the body's subgraph and the propagation delay of all primitive nodes within the graph.

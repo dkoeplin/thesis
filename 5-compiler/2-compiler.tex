@@ -56,12 +56,12 @@ that multiple iterations of this outer loop can be pipelined through these stage
 \input{5-compiler/2.1-memory-analysis}
 \input{5-compiler/2.2-dse}
 
-\subsection{Unrolling}
+\section{Unrolling}
 Following selection of values for design parameters, Spatial finalizes these parameters in a single graph transformation which unrolls loops and duplicates memories as determined by prior analysis passes.
 \texttt{Reduce} and \texttt{MemReduce} patterns are also lowered into their imperative implementations, with hardware reduction trees instantiated from the given reduction function.
 The two \texttt{MemReduce} loops in Figure~\ref{fig:matmult}, for example, will each be lowered into unrolled \texttt{Foreach} loops with explicitly banked memory accesses and explicitly duplicated multiply operations. The corresponding reduction across tiles (lines 46~--~47) are lowered into a second stage of the \texttt{Foreach} with explicit reduction trees matching the loop parallelization.
 
-\subsection{Retiming}
+\section{Retiming}
 After unrolling, the compiler retimes each inner pipeline to make sure data and control signals properly line up and ensure that the target clock frequency can be met.
 To do this, the compiler orders primitive operations within each pipeline based on effect and dataflow order.
 This ordering is calculated using a reverse depth first search along data and effect dependencies.
@@ -69,6 +69,6 @@ A second forward depth first search is then used to minimize delays in reduction
 Based on this ordering, the compiler then inserts pipeline and delay line registers based on lookup tables which map each primitive node to an associated latency. Dependent nodes which have less than a full cycle of delay are kept as combinational operations, with a register only being inserted after the last operation.
 This register insertion maximizes the achievable clock frequency for this controller while also minimizing the required initiation interval.
 
-\subsection{Code Generation}
+\section{Code Generation}
 Prior to code generation, the compiler first allocates register names for every \texttt{\small{ArgIn}}, \texttt{\small{ArgOut}}, and \texttt{\small{HostIO}}.
 In the final pass over the IR, the code generator then instantiates hardware modules from a library of custom, parameterized RTL templates written in Chisel and infers and generates the logic required to stitch them together.  These templates include state machines that manage communication between the various control structures and primitives in the application, as well as the banked and buffered memory structures and efficient arithmetic operations.  Finally, all generated hardware is wrapped in a target-specific, parameterized Chisel module that arbitrates off-chip accesses from the accelerator with the peripheral devices on the target FPGA.

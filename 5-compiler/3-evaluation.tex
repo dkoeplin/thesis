@@ -80,13 +80,13 @@ We now analyze each benchmark in detail.
 
 \textbf{Dot product} (Figure~\ref{fig:dse} A,B,C) is a memory-bound benchmark. Peak execution
 time is reached by balancing tile loads and computation. Inner and outer loop parallelization allows us to
-quickly reach close to the input bandwidth. Runtimes of designs with \emph{MetaPipe}s then slowly decrease as parallelization
-increases once the dominant stage becomes the dot product reduction tree. In \emph{dotproduct}, designs with \emph{MetaPipe} consume less resources than those with \emph{Sequential} for the same performance. \emph{Sequential}s require larger tile sizes and more parallelism to match \emph{MetaPipe} performance.
+quickly reach close to the input bandwidth. Runtimes of designs with pipelined loops then slowly decrease as parallelization
+increases once the dominant stage becomes the dot product reduction tree. In \emph{dotproduct}, designs with pipelines consume fewer resources than those with \emph{Sequential} for the same performance. \emph{Sequential}s require larger tile sizes and more parallelism to match pipelined performance.
 
 \textbf{Outer product} (Figure~\ref{fig:dse} D,E,F) represents both a BRAM and memory bound benchmark. For $2N$ inputs,
 the total BRAM requirement is $2N + N^2$ to store the input and output tiles, meaning the BRAM requirement
 increases quadratically with increases in input tile size. The highest performing designs for outer product do not use
-\emph{MetaPipes} to overlap loading and storing of tiles. This is because the overhead due to main memory contention from overlapping
+pipelines to overlap loading and storing of tiles. This is because the overhead due to main memory contention from overlapping
 tile loads and stores turns out to be higher than the cost of executing each stage sequentially.
 
 \textbf{GEMM} (Figure~\ref{fig:dse} G,H,I) contains a lot of temporal and spatial locality. From Figure~\ref{fig:dse}(I), Pareto-optimal designs for \emph{gemm}
@@ -113,7 +113,7 @@ The number of floating point operations to be done to keep up with main memory b
 The performance of \emph{kmeans} is therefore limited by the number of ALMs on the FPGA, as not enough are available to perform all $K \times D$ operations in parallel.
 Like GDA, \emph{kmeans} is also limited by BRAMs due to under-utilization of BRAM capacity with increased banking factors.
 
-From our experiments, we observe that capturing parallelism at multiple levels using \emph{MetaPipe}s enables us to generate
+From our experiments, we observe that capturing parallelism at multiple levels using pipelined controllers enables us to generate
 efficient designs. In addition, effective management of on-chip BRAM resources is critical to good designs
 as BRAM resources are the limiting factor for performance scaling in most of our benchmarks.
 
@@ -149,8 +149,7 @@ have a pipeline directive to enable outer loop pipelining. We observe the follow
   \item Compared to Vivado HLS, our estimation time is not sensitive to design parameter inputs. Estimation time for Vivado HLS increases
     dramatically when the outer loop is pipelined in GDA because the tool completely unrolls all inner loops
     before pipelining the outer loop. This creates a large graph that complicates scheduling. Our approach does not
-    suffer from this limitation because we explicitly capture pipelines in parameterized templates such as \emph{Pipe} and
-    \emph{MetaPipe}, thereby capturing outer loop pipelining more naturally.
+    suffer from this limitation because we explicitly capture pipelines with parameterized controllers, thereby capturing outer loop pipelining more naturally.
 \end{itemize}
 
 \subsection{Design Tuning with Active Learning}
@@ -228,7 +227,7 @@ Our highest error occurs in predicting DSPs for \emph{outerprod}, where we over-
 However, we found that errors above 10\% for DSP usage only occur for designs which use less than 2\% of the total DSPs available on the device.
 As our benchmarks are limited by other resources (typically ALMs or BRAM), the relative error for DSPs is more sensitive
 to low-level fluctuations and noise. We observe that our DSP estimates preserve absolute ordering of resource utilization. Hence, this error does not
-affect the quality of the designs found during design space exploration, and improves with increased resource utilization.
+affect the quality of the designs found during design space exploration.%, and improves with increased resource utilization.
 
 Of our estimated metrics, BRAM estimates have the highest average error over all benchmarks. These errors are primarily from block RAM duplication done by the placement and routing tool. In designing our models, we found that BRAM duplication is inherently noisy, as more complex machine learning models failed to achieve better estimates than a simple linear fit. Our linear model provides a rough estimate of design complexity and routing requirements, but it does not provide a complete picture for when and how often the synthesis tool will decide to duplicate BRAMs. However, like DSPs, we find that our BRAM estimates track actual usage and preserve ordering across designs, making it usable for design space exploration and relative design comparisons.
 
