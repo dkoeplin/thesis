@@ -26,10 +26,11 @@ Like classic loop tiling, our pattern tiling method is composed of two
 transformations: strip mining and interchange.
 
 As shown in Figure~\ref{fig:delite-diag}, the high level compiler is also responsible
-for performing various well known, target-agnostic transformations like loop fusion,
-loop invariant code motion, and common subexpression elimination (CSE).
-We refer the reader to prior work~\cite{rompf12optimizing,brown16clusters} for
-detailed descriptions of these other transformations.
+for performing various well known, target-agnostic transformations like
+loop fusion~\cite{rompf12optimizing,damien-thesis,vera-thesis},
+loop invariant code motion, common subexpression elimination (CSE)~\cite{lms},
+and data structure optimizations~\cite{rompf12optimizing}.
+We refer the reader to prior work for detailed descriptions of these other transformations.
 
 \begin{figure*}
 \centering

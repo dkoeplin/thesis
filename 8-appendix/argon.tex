@@ -1,3 +1,126 @@
 \chapter{The Argon Compiler Framework}
 \label{argon}
-\todo{Placeholder}
+
+The central theme of this thesis is establishing a compiler framework and
+intermediate hardware abstraction which can
+take as input high level DSLs and compile them down to optimized accelerator
+designs for targeting FPGAs. So far, we have largely discussed the theory
+and ideas behind this compiler without going into much detail about the practical
+implementation of the high level Delite compiler or the Spatial compiler.
+Here, we go into a little more detail on the research implementation of Spatial
+and the compiler framework underpinning it, dubbed Argon.
+
+\section{Background on Embedded DSLs and Staging}
+Both the high level compiler (Delite) and the low level compiler (Spatial)
+are implemented in practice as embedded DSL compilers written in Scala. The Spatial
+abstraction is implemented as an embedded DSL tied to the
+implementation of the Spatial compiler.
+While Delite largely already existed at the outset of this work, we chose to
+continue the embedded DSL approach with the implementation of Spatial because of the
+multitude of advantages both Scala and embedded DSLs have when writing compiler
+implementations.
+
+Embedded DSLs can be thought of as libraries within an existing language.
+One of the key performance advantages that embedded DSLs can offer is to support
+``staging'' of operations. Staging operations builds up a full or partial
+intermediate representation of the originally intended program,
+which can be optimized and even code generated into another language before being run.
+This approach is used to various degrees in a large number of commonly used
+DSLs, including PyTorch, TensorFlow, Halide, and Chisel.
+
+The natural extension of this staging approach is to present the user with only
+staged operations. This means every application written in the DSL will produce
+a full program intermediate representation, thus allowing the embedded DSL
+to be a statically compiled language.
+In previous implementations of Delite DSLs and in our implementation of the
+Spatial language and compiler in this work, we take exactly this approach.
+This allows us to build a complete compiler which has
+a full view of the program, thus exposing extensive opportunities for optimization.
+For our statically compiled, staged, embedded DSLs, this means the following steps are required before
+an application written in the DSL can be run:
+\begin{enumerate}
+\item The user writes their program in the embedded DSL.
+\item The parent language compiler is run on the user's program.
+\item The user's program is executed as if it was any other parent language application.
+      This execution generates a program graph and runs the DSL compiler.
+\item The DSL compiler optimizes the program and generates executable code.
+\item The generated code is compiled by its corresponding compiler
+\end{enumerate}
+
+For software targets like CPUs and GPUs, the compiled code can be run immediately.
+However, in Spatial's case, the generated code is Chisel,
+so there are three addtional steps:
+\begin{enumerate}
+\setcounter{enumi}{5}
+\item The compiled Chisel application is run and generates Verilog.
+\item A vendor hardware synthesis tool is run on the generated Verilog.
+\item The resulting bitfile is loaded onto an FPGA and executed.
+\end{enumerate}
+
+Although it complicates the compilation process somewhat,
+the embedded DSL approach to language design offers a number of advantages~\cite{forge}.
+Prototyping a DSL as a library
+is arguably simpler and more easily editable than writing a language grammar and parser.
+The DSL author can also leverage the existing type system of the parent language,
+obviating the need to write typing rules or a type analysis themselves.
+At the same time, an embedded implementation can make writing compiler passes easier;
+since the DSL exists as a library, the full frontend syntax can potentially be
+used in the internals of the compiler without any additional cost.
+Additionally, while the elements within the DSL are staged, the surrounding
+parent language is not, thus providing an extremely rich environment for
+meta-programming applications in the DSL. This turns out to be a double benefit,
+as meta-programming can be used both in the implementation of the DSL's compiler
+passes and by the front-end users.
+
+As for the choice of parent language,
+Scala itself offers a rich and concise language for common
+compiler operations like pattern matching. Scala was also built to support
+the implementation of embedded DSLs, and its concepts of implicit functions
+and classes lends nicely to this task.
+
+The lightweight modular staging (LMS) framework~\cite{lms} provides an
+extensible set of abstractions for building staged, embedded DSLs in
+Scala. Among other things, it provides classes and associated methods for creating
+and manipulating an intermediate representation of a staged program.
+It also provides a basic set of IR nodes representing various common operations,
+including abstractions for loops, arrays, structs, strings, and numeric primitives
+and mathematical operations.
+LMS also provides a set of optimizations which operate on these nodes,
+including code motion and common subexpression elimination.
+The original Delite compiler extends LMS by adding traversal passes and
+building out the number and variety of IR nodes, including a library of nodes
+for representing parallel patterns like those discussed in Chapter~\ref{background}.
+
+While implementing the Spatial language and compiler,
+we ultimately decided that the LMS framework required several significant
+modifications for hosting a complex compiler intended to generate hardware designs.
+We decided to implement a new embedded DSL compiler framework, dubbed Argon,
+inspired by LMS but with a number of changes.
+The Argon framework now serves a similar purpose as LMS does for Delite,
+providing a base intermediate representation library and basic operations.
+In the remainder of the Appendix, we discuss some of the reasons
+why we decided to implement Argon and how it differs from LMS.
+
+We note here that Argon was not intended as a replacement for LMS.
+Instead, development on Argon provided us a separate
+avenue to explore design tradeoffs for staged DSL frameworks. A number of the
+design improvements described here have been or soon will be adopted into the LMS framework itself,
+while others are design choices that make sense in the context of hosting a
+DSL targeting hardware, but are less advantageous for a software DSL.
+
+\section{The Cake Pattern}
+
+\section{Symbols}
+
+\section{Draining the Sea of Nodes}
+LMS's intermediate representation is colloquially referred to as
+a ``sea of nodes'' representation
+
+\section{Scala-Virtualized and Macro-Virtualized}
+LMS itself uses a Scala compiler plugin called Scala-Virtualized
+
+
+
+\section{Symbol Metadata}
+
+\section{Compiler Traversals}
