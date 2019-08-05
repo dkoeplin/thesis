@@ -7,7 +7,7 @@ take as input high level DSLs and compile them down to optimized accelerator
 designs for targeting FPGAs. So far, we have largely discussed the theory
 and ideas behind this compiler without going into much detail about the practical
 implementation of the high level Delite compiler or the Spatial compiler.
-Here, we go into a little more detail on the research implementation of Spatial
+Here, we go into more detail on the prototype implementation of Spatial
 and the compiler framework underpinning it, dubbed Argon.
 
 \section{Background on Embedded DSLs and Staging}
@@ -96,31 +96,200 @@ we ultimately decided that the LMS framework required several significant
 modifications for hosting a complex compiler intended to generate hardware designs.
 We decided to implement a new embedded DSL compiler framework, dubbed Argon,
 inspired by LMS but with a number of changes.
-The Argon framework now serves a similar purpose as LMS does for Delite,
-providing a base intermediate representation library and basic operations.
+The Argon framework now serves a similar purpose for the Spatial compiler
+as LMS does for Delite,
+providing a base intermediate representation library and a base of IR nodes.
 In the remainder of the Appendix, we discuss some of the reasons
-why we decided to implement Argon and how it differs from LMS.
+we decided to implement Argon and how it differs from LMS.
 
-We note here that Argon was not intended as a replacement for LMS.
+% Begin Tiark please don't hate me
+Note that Argon was not intended as a replacement for LMS.
 Instead, development on Argon provided us a separate
-avenue to explore design tradeoffs for staged DSL frameworks. A number of the
-design improvements described here have been or soon will be adopted into the LMS framework itself,
-while others are design choices that make sense in the context of hosting a
-DSL targeting hardware, but are less advantageous for a software DSL.
+avenue to explore design tradeoffs and new features for staged DSL frameworks.
+A number of the items described here have been or will be adopted
+by the LMS framework itself, while others are design choices that
+make sense in the context of hosting a DSL targeting hardware,
+but are less advantageous for a software DSL.
+% End Tiark please don't hate me
 
 \section{The Cake Pattern}
 
-\section{Symbols}
+
+\section{Intermediate Representation}
+One of the primary responsibilities of the DSL compiler framework is to provide the classes and methods for building program intermediate
+representations. These classes are used extensively throughout the compiler
+code, as they form the basic structures which are traversed and modified.
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaBig]
+abstract class Type[+T]
+
+abstract class Exp[+T:Type]
+case class Const[+T:Type](x: T) extends Exp[T]
+case class Sym[+T:Type](id: Int) extends Exp[T]
+
+abstract class Def[+T]
+\end{lstlisting}
+\caption{A summary of the classes for staged type manifests, symbols, and nodes in LMS. Implementation details have been omitted here.}
+\label{fig:lms-ir}
+\end{figure}
+
+
+Both LMS and Argon use a hierarchical, directed acyclic graph (DAG) to represent programs. The core elements of this graph are nodes and edges,
+though these are not quite synonymous with standard graph terminology.
+In both frameworks, staged operations are represented by nodes, and referred to as an ``op'', ``def'', or node. The resulting value from an operation
+is referred to as an ``symbol'' or edge. One symbol always corresponds to
+one operation. In LMS, one operation can have multiple symbols.
+Operations have references to their dependencies via
+references to the symbols corresponding to these
+values. This is similar in spirit to
+assembly instructions with operand and output registers, but notably different
+than standard graph terminology where an edge is a distinct connection between two nodes.
+
+Figure~\ref{fig:lms-ir} shows a simplified view of the classes
+used to represent symbols and operations in LMS.
+Most staged operations in LMS are subclasses of \texttt{Def[T]}, where
+\texttt{T} denotes the return type of the operation.
+The central classes are also quite simple, with the result of all staged operations represented by \texttt{Exp[T]}, with each instance either being a
+constant (\texttt{Const[T]}) or symbolic value (\texttt{Sym[T]}).
+
+LMS's structure directly lends itself to one of the key features of LMS.
+Using a type mix-in trick, LMS allows users to write programs in
+terms of \texttt{Rep[T]} values. Then, based on which of two cakes the
+base application is mixed with, \texttt{Rep[T]} is either assigned to be
+simply a native Scala type (\texttt{Rep[T] = T}) or a staged symbolic value (\texttt{Rep[T] = Sym[T]}).
+For software-based DSLs, this effectively provides a Scala interpreter
+of the application with minimal extra work, provided the DSL author
+provides a corresponding native Scala implementation for every DSL type.
+
+There are several problems that arise with this \texttt{Exp} hierarchy.
+All application-facing staged values in LMS must have the same outer \texttt{Exp[T]} type, where only the type argument \texttt{T} differs between instances of different DSL types. In practice,
+this means that most staged infix methods in LMS-based DSLs must be defined and resolved using Scala's implicit resolution on instances of the \texttt{Exp[T]} type. For example, Figure~\ref{fig:lms-ir-example}, shows how implicit classes can be used to provide different implementations
+of the \texttt{+} operator on different DSL types.
+
+Scala compile times can become relatively for resolution of infix methods, as the Scala compiler must inspect the type argumentx
+to resolve which implicit class implementation is actually applicable.
+Worse still, more complicated DSLs can easily become plagued by implicit
+ordering issues as more and more implicit classes are added throughout the
+DSL cake's traits. These issues usually show up as opaque
+Scala compiler error messages to frontend users.
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaBig]
+trait FloatOps {
+  def float_add(a: Rep[Float], b: Rep[Float]): Rep[Float]
+
+  implicit class FloatInfixOps(a: Rep[Float]) {
+    def +(b: Rep[Float]): Rep[Float] = float_add(a, b)
+  }
+}
+trait IntegerOps {
+  def int_add(a: Rep[Int], b: Rep[Int]): Rep[Int]
+
+  implicit class IntegerInfixOps(a: Rep[Int]) {
+    def +(b: Rep[Int]): Rep[Int] = int_add(a, b)
+  }
+}
+\end{lstlisting}
+\caption{A simple example of infix operations defined in LMS for integer and floating point DSL types.}
+\label{fig:lms-ir-example}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaBig]
+abstract class TypLike[+C:ClassTag,T]
+
+trait ExpLike[+C,+T] {
+  var tp: TypLike[C,T]
+  var rhs: Rhs[C,T]
+}
+
+type Typ[+T] = TypLike[_,T]
+type Sym[+T] = ExpLike[_,T]
+
+abstract class Def[T]
+
+abstract class Rhs[+C, +T]
+case class Const[C](value: C) extends Rhs[C,_]
+case class Param[C](id: Int, value: C) extends Rhs[C,_]
+case class Node[C](id: Int, op: Def[T]) extends Rhs[_,T]
+\end{lstlisting}
+\caption{A summary of the classes for staged type manifests, symbols, and node classes in Argon. Implementation details have been omitted here.}
+\label{fig:argon-ir}
+\end{figure}
+
+The \texttt{Rep[T]} aliasing trick in LMS offers minimal benefit to Spatial as many of its hardware types have no straightforward Scala implementation without compiler transformations and code generation.
+Considering the overhead of having implicit resolution for DSL infix methods, we opted instead for the symbol hierarchy in Argon as summarized in Figure~\ref{fig:argon-ir}.
+
+In this implementation, instead of subclassing
+\texttt{Exp} to differentiate between constant and symbolic values, we
+use the \texttt{Rhs} wrapper class. A \texttt{Rhs} instance can either
+be a \texttt{Node}, a wrapper for a \texttt{Def}, thus directly associating an \texttt{Exp} with its definition, or a constant \texttt{Const} value.
+We also provide a new \texttt{Param} class for statically known values which
+the compiler can change to support application design parameters, as discussed in Chapter~\ref{language}.
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaBig]
+class Float extends Exp[Float] {
+  def +(b: Float): Float = Float.add(a, b)
+}
+object Float {
+  def add(a: Float, b: Float): Float = ...
+}
+
+class Int extends Exp[Int] {
+  def +(b: Int): Int = Int.add(a, b)
+}
+object Int {
+  def add(a: Int, b: Int): Int = ...
+}
+\end{lstlisting}
+\caption{Staged type definitions and infix addition operations defined in Argon for integer and floating point DSL types.}
+\label{fig:argon-ir-example}
+\end{figure}
+
+This modified hierarchy leaves us free to subclass the \texttt{Exp[T]} class
+directly in our DSL implementation. As shown in Figure~\ref{fig:argon-ir-example}, this allows us to eliminate user-facing
+exposure to \texttt{Exp[T]} in most cases and removes the need for most
+implicit methods. As shown here, it also allows us to forego the use of the cake pattern for infix methods and the definition of our DSL types.
+This comes at a cost, however, as we have given up the ability to
+flip a single type alias switch to enable Scala interpreter mode.
+
+There are of course other ways of implenting this hierarchy, including
+wrapping \texttt{Exp[T]} in user-facing classes, or eliminating the
+type parameter from \texttt{Exp} altogether. None of these solutions
+is strictly better than any other, but for implementing Spatial, we found
+that the current design in Argon is sufficiently clean.
+
+We conclude this section by noting that, if we restrict every operation to have exactly one symbol,
+it is tempting at first to fuse \texttt{Def} and \texttt{Exp}, with every
+\texttt{Def} subclass instead directly taking references to \texttt{Def}s to
+track its data dependencies.
+Without great care, however, this can lead to
+issues in practice when using Scala case classes. In Scala, methods like
+\texttt{hashcode} and \texttt{equals} are automatically generated.
+The default generated methods will effectively be recursive to the depth of the longest data depency chain, with no memoization generated by default.
+This can ultimately lead to unpredictable behavior in hashed collections and
+slow compile times for large programs. In practice, we prefer keeping
+\texttt{Exp} and \texttt{Def} distinct class hierarchies to avoid unnecessary
+and accidental equality comparisons and hashcodes based on graph structure when ID-based versions would suffice.
+
+
 
 \section{Draining the Sea of Nodes}
 LMS's intermediate representation is colloquially referred to as
 a ``sea of nodes'' representation
 
+
+
 \section{Scala-Virtualized and Macro-Virtualized}
-LMS itself uses a Scala compiler plugin called Scala-Virtualized
+LMS itself uses a Scala compiler plugin called
+Scala-Virtualized~\cite{scala-virtualized}.
 
-
+\cite{cedric-thesis, boris-thesis}
 
 \section{Symbol Metadata}
+
+\section{Effects}
 
 \section{Compiler Traversals}
