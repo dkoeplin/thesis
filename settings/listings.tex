@@ -292,6 +292,48 @@
   morekeywords={mapRows,mapCols,zip,zipWithIndex,groupBy,sum,min,minBy,reduce,for,filter,do,while,slice,copy,multiFold,fold,groupByFold,map,flatMap}
 }
 
+\lstdefinelanguage{ScalaDSL}{
+  basicstyle=\fontsize{8}{8}\beramonott,
+  frame=tlbr,
+  framesep=4pt,
+  framerule=0pt,
+  tabsize=2,
+  basewidth={0.55em, 0.4em},%
+  numbers=left,
+  showspaces=false,
+  keywordstyle=\fontseries{b},
+  breaklines=true,
+  columns=fullflexible,
+  xleftmargin=0.5cm,
+  firstnumber=auto,
+  showstringspaces=false,
+  escapechar=@,
+  escapeinside={(*@}{@*)},
+  morestring=[b]",
+  morestring=[b]',
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  mathescape=true,
+  backgroundcolor=\color{backcolour},
+  morestring=[b]",
+  morestring=[b]',
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{codegreen}\fontseries{b},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple},
+  keywordstyle=[2]\color{blue},
+  keywords=[2]{val, def, var},
+  keywordstyle=[3]\color{blue}\fontseries{b},
+  keywords=[3]{Void, Bit},
+  keywordstyle=[4]\color{orange}\fontseries{b},
+  keywords=[4]{Matrix, Array},
+  keywordstyle=[5]\fontseries{b}\color{magenta},
+  keywords=[5]{map, mapRows, mapCols, zip, zipWithIndex, groupBy, sum, min, minBy, reduce, fold, for, flatMap, multiFold, groupByFold, filter, do, while, slice, copy, abstract, class, trait, type, case, object, implicit},
+  keywordstyle=[7]\color{magenta},
+  keywords=[7]{until, par, by}
+}
+
 \lstset{
   language=PPL,
   basicstyle=\fontsize{7}{7}\selectfont\tt,

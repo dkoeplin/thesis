@@ -1,14 +1,14 @@
 \chapter{The Argon Compiler Framework}
 \label{argon}
 
-The central theme of this thesis is establishing a compiler framework and
-intermediate hardware abstraction which can
+The central contribution of this dissertation is the description of
+a compiler framework and intermediate hardware abstraction which can
 take as input high level DSLs and compile them down to optimized accelerator
 designs for targeting FPGAs. So far, we have largely discussed the theory
 and ideas behind this compiler without going into much detail about the practical
 implementation of the high level Delite compiler or the Spatial compiler.
-Here, we go into more detail on the prototype implementation of Spatial
-and the compiler framework underpinning it, dubbed Argon.
+Here, we focus on a few details of the prototype implementation of Spatial
+as an embedded DSL and the compiler framework underpinning it, dubbed Argon.
 
 \section{Background on Embedded DSLs and Staging}
 Both the high level compiler (Delite) and the low level compiler (Spatial)
@@ -93,7 +93,7 @@ for representing parallel patterns like those discussed in Chapter~\ref{backgrou
 
 While implementing the Spatial language and compiler,
 we ultimately decided that the LMS framework required several significant
-modifications for hosting a complex compiler intended to generate hardware designs.
+modifications for hosting a complex static compiler intended to generate hardware designs.
 We decided to implement a new embedded DSL compiler framework, dubbed Argon,
 inspired by LMS but with a number of changes.
 The Argon framework now serves a similar purpose for the Spatial compiler
@@ -102,38 +102,22 @@ providing a base intermediate representation library and a base of IR nodes.
 In the remainder of the Appendix, we discuss some of the reasons
 we decided to implement Argon and how it differs from LMS.
 
-% Begin Tiark please don't hate me
 Note that Argon was not intended as a replacement for LMS.
-Instead, development on Argon provided us a separate
-avenue to explore design tradeoffs and new features for staged DSL frameworks.
-A number of the items described here have been or will be adopted
-by the LMS framework itself, while others are design choices that
-make sense in the context of hosting a DSL targeting hardware,
-but are less advantageous for a software DSL.
-% End Tiark please don't hate me
-
-\section{The Cake Pattern}
-
+LMS has a broad goal of supporting staged compilation for
+fully compiled DSLs and domain-specific optimizations for partially staged libraries.
+Our work on Argon is focused solely on supporting fully statically compiled
+DSLs, as is required when generating hardware accelerator designs.
+During this development, we were able
+to explore design tradeoffs and new features for staged DSL frameworks.
+While a number of the items described here have been or will be adopted
+by the LMS framework itself, others are design choices that
+make sense only in the context of hosting a DSL targeting hardware,
+but are less advantageous for a modular DSL.
 
 \section{Intermediate Representation}
 One of the primary responsibilities of the DSL compiler framework is to provide the classes and methods for building program intermediate
 representations. These classes are used extensively throughout the compiler
 code, as they form the basic structures which are traversed and modified.
-
-\begin{figure}
-\begin{lstlisting}[language=ScalaBig]
-abstract class Type[+T]
-
-abstract class Exp[+T:Type]
-case class Const[+T:Type](x: T) extends Exp[T]
-case class Sym[+T:Type](id: Int) extends Exp[T]
-
-abstract class Def[+T]
-\end{lstlisting}
-\caption{A summary of the classes for staged type manifests, symbols, and nodes in LMS. Implementation details have been omitted here.}
-\label{fig:lms-ir}
-\end{figure}
-
 
 Both LMS and Argon use a hierarchical, directed acyclic graph (DAG) to represent programs. The core elements of this graph are nodes and edges,
 though these are not quite synonymous with standard graph terminology.
@@ -148,34 +132,49 @@ than standard graph terminology where an edge is a distinct connection between t
 
 Figure~\ref{fig:lms-ir} shows a simplified view of the classes
 used to represent symbols and operations in LMS.
-Most staged operations in LMS are subclasses of \texttt{Def[T]}, where
-\texttt{T} denotes the return type of the operation.
-The central classes are also quite simple, with the result of all staged operations represented by \texttt{Exp[T]}, with each instance either being a
-constant (\texttt{Const[T]}) or symbolic value (\texttt{Sym[T]}).
+Staged operations in LMS are represented as subclasses of \stt{Def[T]}, where
+\stt{T} denotes the return type of the operation.
+The central classes are also quite simple, with the result of all staged
+operations represented by the abstract class \stt{Exp[T]},
+with each instance either being a constant (\stt{Const[T]})
+or a symbolic value (\stt{Sym[T]}).
 
-LMS's structure directly lends itself to one of the key features of LMS.
-Using a type mix-in trick, LMS allows users to write programs in
-terms of \texttt{Rep[T]} values. Then, based on which of two cakes the
-base application is mixed with, \texttt{Rep[T]} is either assigned to be
-simply a native Scala type (\texttt{Rep[T] = T}) or a staged symbolic value (\texttt{Rep[T] = Sym[T]}).
-For software-based DSLs, this effectively provides a Scala interpreter
-of the application with minimal extra work, provided the DSL author
-provides a corresponding native Scala implementation for every DSL type.
+There are several problems that arise from this hierarchy.
+All application-facing staged values in LMS must have the same outer
+\stt{Exp[T]} type, where only the type argument \stt{T} differs between
+instances of different DSL types. In practice, this means that most staged
+infix methods in LMS-based DSLs must be defined and resolved using Scala's
+implicit resolution on instances of the \stt{Exp[T]} type. For example,
+Figure~\ref{fig:lms-ir-example}, shows how implicit classes can be used to
+provide different implementations of the \stt{+} operator on different
+DSL types. For the purposes of this example,
+\stt{Rep[T]} can be thought of as an alis for \stt{Exp[T]}. We discuss the
+reasons behind this alias further in the next section.
 
-There are several problems that arise with this \texttt{Exp} hierarchy.
-All application-facing staged values in LMS must have the same outer \texttt{Exp[T]} type, where only the type argument \texttt{T} differs between instances of different DSL types. In practice,
-this means that most staged infix methods in LMS-based DSLs must be defined and resolved using Scala's implicit resolution on instances of the \texttt{Exp[T]} type. For example, Figure~\ref{fig:lms-ir-example}, shows how implicit classes can be used to provide different implementations
-of the \texttt{+} operator on different DSL types.
-
-Scala compile times can become relatively for resolution of infix methods, as the Scala compiler must inspect the type argumentx
+Scala compile times can become relatively for resolution of infix methods,
+as the Scala compiler must inspect the type argumentx
 to resolve which implicit class implementation is actually applicable.
 Worse still, more complicated DSLs can easily become plagued by implicit
 ordering issues as more and more implicit classes are added throughout the
-DSL cake's traits. These issues usually show up as opaque
+DSL. These issues then tend to surface as opaque
 Scala compiler error messages to frontend users.
 
 \begin{figure}
-\begin{lstlisting}[language=ScalaBig]
+\begin{lstlisting}[language=ScalaDSL]
+abstract class Type[+T]
+
+abstract class Exp[+T:Type]
+case class Const[+T:Type](x: T) extends Exp[T]
+case class Sym[+T:Type](id: Int) extends Exp[T]
+
+abstract class Def[+T]
+\end{lstlisting}
+\caption{A summary of the classes for staged type manifests, symbols, and nodes in LMS. Implementation details have been omitted here and naming has been changed slightly to mirror Argon.}
+\label{fig:lms-ir}
+\end{figure}
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaDSL]
 trait FloatOps {
   def float_add(a: Rep[Float], b: Rep[Float]): Rep[Float]
 
@@ -196,7 +195,7 @@ trait IntegerOps {
 \end{figure}
 
 \begin{figure}
-\begin{lstlisting}[language=ScalaBig]
+\begin{lstlisting}[language=ScalaDSL]
 abstract class TypLike[+C:ClassTag,T]
 
 trait ExpLike[+C,+T] {
@@ -214,22 +213,22 @@ case class Const[C](value: C) extends Rhs[C,_]
 case class Param[C](id: Int, value: C) extends Rhs[C,_]
 case class Node[C](id: Int, op: Def[T]) extends Rhs[_,T]
 \end{lstlisting}
-\caption{A summary of the classes for staged type manifests, symbols, and node classes in Argon. Implementation details have been omitted here.}
+\caption{A summary of the classes for staged type manifests, symbols, and node classes in Argon. Implementation details have been omitted here and naming has been changed slightly to mirror LMS.}
 \label{fig:argon-ir}
 \end{figure}
 
-The \texttt{Rep[T]} aliasing trick in LMS offers minimal benefit to Spatial as many of its hardware types have no straightforward Scala implementation without compiler transformations and code generation.
-Considering the overhead of having implicit resolution for DSL infix methods, we opted instead for the symbol hierarchy in Argon as summarized in Figure~\ref{fig:argon-ir}.
-
-In this implementation, instead of subclassing
-\texttt{Exp} to differentiate between constant and symbolic values, we
-use the \texttt{Rhs} wrapper class. A \texttt{Rhs} instance can either
-be a \texttt{Node}, a wrapper for a \texttt{Def}, thus directly associating an \texttt{Exp} with its definition, or a constant \texttt{Const} value.
-We also provide a new \texttt{Param} class for statically known values which
+Considering the overhead of having implicit resolution for DSL infix methods,
+we opted instead for the symbol hierarchy in Argon as summarized
+in Figure~\ref{fig:argon-ir}. In this implementation, instead of subclassing
+\stt{Exp} to differentiate between constant and symbolic values, we
+use the \stt{Rhs} wrapper class. A \stt{Rhs} instance can either
+be a \stt{Node}, a wrapper for a \stt{Def}, thus directly associating
+an \stt{Exp} with its definition, or a constant \stt{Const} value.
+We also provide a new \stt{Param} class for statically known values which
 the compiler can change to support application design parameters, as discussed in Chapter~\ref{language}.
 
 \begin{figure}
-\begin{lstlisting}[language=ScalaBig]
+\begin{lstlisting}[language=ScalaDSL]
 class Float extends Exp[Float] {
   def +(b: Float): Float = Float.add(a, b)
 }
@@ -244,52 +243,398 @@ object Int {
   def add(a: Int, b: Int): Int = ...
 }
 \end{lstlisting}
-\caption{Staged type definitions and infix addition operations defined in Argon for integer and floating point DSL types.}
+\caption{Staged type definitions and infix addition operations defined in Argon for integer and floating point DSL types.
+Note that the \stt{Int} and \stt{Float} classes shadow the original Scala types here.
+In practice the DSL author may wish to provide access to these staged types or the
+corresponding unstaged Scala types primarily via an explicit namespace.}
 \label{fig:argon-ir-example}
 \end{figure}
 
-This modified hierarchy leaves us free to subclass the \texttt{Exp[T]} class
+This modified hierarchy leaves us free to subclass the \stt{Exp[T]} class
 directly in our DSL implementation. As shown in Figure~\ref{fig:argon-ir-example}, this allows us to eliminate user-facing
-exposure to \texttt{Exp[T]} in most cases and removes the need for most
-implicit methods. As shown here, it also allows us to forego the use of the cake pattern for infix methods and the definition of our DSL types.
+exposure to \stt{Exp[T]} in most cases and removes the need for most
+implicit methods. As discussed in the next section,
+it also allows us to forego the use of the cake pattern f
+or infix methods and the definition of our DSL types.
 This comes at a cost, however, as we have given up the ability to
 flip a single type alias switch to enable Scala interpreter mode.
 
-There are of course other ways of implenting this hierarchy, including
-wrapping \texttt{Exp[T]} in user-facing classes, or eliminating the
-type parameter from \texttt{Exp} altogether. None of these solutions
-is strictly better than any other, but for implementing Spatial, we found
-that the current design in Argon is sufficiently clean.
+There are many other ways of implementing this hierarchy, including
+wrapping \stt{Exp[T]} in user-facing classes, or eliminating the
+type parameter from \stt{Exp} altogether. Of course, none of these solutions
+is strictly better than any other for all cases. The choices in Aron here
+reflect the fact that, in Spatial, we prefer to provide
+the user with staged types like \stt{Int} and \stt{SRAM[T]} instead of
+\stt{Rep[Int]} and \stt{Rep[SRAM[T]]}.
 
 We conclude this section by noting that, if we restrict every operation to have exactly one symbol,
-it is tempting at first to fuse \texttt{Def} and \texttt{Exp}, with every
-\texttt{Def} subclass instead directly taking references to \texttt{Def}s to
+it is tempting at first to fuse \stt{Def} and \stt{Exp}, with every
+\stt{Def} subclass instead directly taking references to \stt{Def}s to
 track its data dependencies.
 Without great care, however, this can lead to
 issues in practice when using Scala case classes. In Scala, methods like
-\texttt{hashcode} and \texttt{equals} are automatically generated.
+\stt{hashcode} and \stt{equals} are automatically generated.
 The default generated methods will effectively be recursive to the depth of the longest data depency chain, with no memoization generated by default.
 This can ultimately lead to unpredictable behavior in hashed collections and
 slow compile times for large programs. In practice, we prefer keeping
-\texttt{Exp} and \texttt{Def} distinct class hierarchies to avoid unnecessary
+\stt{Exp} and \stt{Def} distinct class hierarchies to avoid unnecessary
 and accidental equality comparisons and hashcodes based on graph structure when ID-based versions would suffice.
 
+\section{The Cake (Anti)Pattern}
+One of the key insights in LMS is that, in embedded DSLs in Scala,
+a simple type aliasing trick can be used to allow users to transparently switch
+between interpreted (unstaged) and compiled (staged) execution of their program.
+To this end, in LMS based DSLs, users operate on staged values exclusively through a
+\stt{Rep[T]} type. The DSL author provides two implementations for
+every staged operation - an unstaged ``library'' version and a staged,
+compiled version. These two versions are exposed to the end user as two classes
+which can be added to their base application.
+Depending on which class is used, \stt{Rep[T]} is either aliased to
+a native Scala type (\stt{Rep[T] = T})
+or a staged symbolic value (\stt{Rep[T] = Sym[T]}). When the program is run,
+all DSL operations will be executed either in an unstaged or staged fashion.
 
+\begin{figure}
+\begin{lstlisting}[language=ScalaDSL]
+// In LMS Framework
+trait Base {
+  type Rep[T]
+}
+trait BaseExp extends Base with Expressions {
+  type Rep[T] = Exp[T]
+}
+trait BaseLib extends Base {
+  type Rep[T] = T
+}
 
-\section{Draining the Sea of Nodes}
+// In DSL
+trait FloatOps extends BaseOps {
+  def float_add(a: Rep[Float], b: Rep[Float]): Rep[Float]
+  def random_float(): Rep[Float]
+
+  implicit class FloatInfixOps(a: Rep[Float]) {
+    def +(b: Rep[Float]): Rep[Float] = float_add(a, b)
+  }
+}
+trait FloatOpsLib extends BaseLib with FloatOps {
+  // Rep[Float] = Float
+  // Note that this method is not actually needed because Scala's Float
+  // already has a + operator, so the above implicit class will not be used.
+  def fload_add(a: Rep[Float], b: Rep[Float]): Rep[Float] = a + b
+  def random_float(): Rep[Float] = ...
+}
+trait FloatOpsExp extends BaseExp with FloatOps {
+  case class FloatAdd(a: Exp[Float], b: Exp[Float]) extends Def[Float]
+  case class FloatRandom() extends Def[Float]
+
+  def float_add(a: Rep[Float], b: Rep[Float]): Rep[Float] = stage(FloatAdd(a,b))
+  def random_float(): Rep[Float] = stage(FloatRandom())
+}
+
+trait Dsl extends FloatOps with ...
+trait DslLibrary extends FloatOpsExp with ...
+trait DslCompiler extends FloatOpsExp with ...
+
+// In user application
+trait UserApp extends DSLOps {
+  // Implementation based on Rep[T]
+}
+object UserAppInterpreter extends UserApp with DslLibrary
+object UserAppCompiler extends UserApp with DslCompiler
+\end{lstlisting}
+\caption{An extended example of implementing a staged Float type in LMS.
+To build a DSL, multiple traits like FloatOpsExp are combined together
+using Scala's support for multiple inheritance. Two versions of the DSL are
+built - a staged ``compiler'' version and an unstaged ``library'' version.
+In the user application, these traits are then used to create an
+interpreted version and a compiled version of the application.}
+\label{fig:lms-dsl-example}
+\end{figure}
+
+Figure~\ref{fig:lms-dsl-example} shows a more complete example of the design
+of a DSL with a single floating point type. In practice, a
+DSL is built up modularly by mixing many of these implementation traits together
+using multiple inheritance~\cite{cake-pattern}.
+This design pattern, commonly called the ``cake pattern'' in Scala, has
+become somewhat controversial in the Scala community. In our implementation
+of Argon and Spatial, we chose to avoid using the cake design pattern where possible.
+
+Since Argon is targeted towards fully statically compiled DSLs,
+the ``interpreter'' version of the DSL and the use of \stt{Rep[T]} is much less valuable.
+This is especially true in the case of Spatial, where many of the hardware types
+have no simple software equivalent. The mixed interpreted / staged DSL
+design approach therefore offered us little benefit but required significant code boilerplate.
+In Argon, we prefer to instead code generate a software interpreter and have the
+entire DSL specification in terms of staged types. This removes the use of the
+\stt{Ops} and \stt{OpsLib} traits like in Figure~\ref{fig:lms-dsl-example} entirely.
+
+Using the cake pattern in LMS, the compiler IR and DSL classes
+are all defined within the DSL cake and are therefore all path-dependent types.
+This is a direct consequence of the \stt{Rep[T]}
+type, which must be path-dependent.
+Since path-dependent types make composition between DSLs and abstractions difficult,
+we decided to eliminate the remaining \stt{OpsExp} traits in favor of
+the standard Scala package design pattern.
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaDSL]
+// In Argon Framework
+abstract class Exp[T]
+
+// In DSL
+case class FloatAdd(a: Float, b: Float) extends Def[Float]
+case class FloatRandom() extends Def[Float]
+
+case class Float extends Exp[Float] {
+  def +(b: Float): Float = stage(FloatAdd(this, b))
+}
+trait FloatOps {
+  def random_float(): Rep[Float] = stage(FloatRandom())
+}
+
+trait Dsl extends FloatOps with ...
+
+// In user application
+object UserApp extends DSLOps {
+  ...
+}
+\end{lstlisting}
+\caption{An implementation of the Float DSL in Figure~\ref{fig:lms-dsl-example} in
+the Argon framework.}
+\label{fig:argon-dsl-example}
+\end{figure}
+
+In the implementations of Argon and Spatial, use of the cake pattern is
+now limited to the definition of static methods and implicit classes,
+since these cannot be globally defined in Scala. We show an equivalent
+example of the Float DSL implemented in Argon in Figure~\ref{fig:argon-dsl-example}.
+Note that the \stt{random\_float} method is intended to be a static, user-facing method,
+so it still uses the cake pattern.
+
+\section{The Sea of Nodes}
+In most compilers, the graph structure of the program is kept explicitly in memory.
+Compilers which use control flow graphs, for example, keep each scope as a
+basic block with a list of program statements. While transformers are allowed
+to change and reorder the contents of these blocks, the IR between compiler traversals is
+typically maintained with a fixed statement schedule per scope.
 LMS's intermediate representation is colloquially referred to as
-a ``sea of nodes'' representation
+a ``sea of nodes'' graph representation because program scopes are largely
+implicit in the graph. Blocks in LMS capture, for example, loop scopes or
+if-then-else branches, but the block is only a wrapper for their result symbol.
+All other scope information is discovered upon graph traversal by scheduling
+statements based on explicitly maintained data and scheduling dependencies.
+This is possible thanks to LMS's special \stt{Reflect} and \stt{Reify} nodes, which
+preserve complete information about control dependencies between statements and
+within blocks, respectively.
 
+The purpose of this unusual design is to enable implicit loop invariant
+code motion during graph traversal. Since code motion interacts heavily with
+other optimizations like common subexpression elimination, having this
+optimization occur implicitly upon graph traversal can significantly simplify
+the problem of compiler pass ordering.
 
-
-\section{Scala-Virtualized and Macro-Virtualized}
-LMS itself uses a Scala compiler plugin called
-Scala-Virtualized~\cite{scala-virtualized}.
-
-\cite{cedric-thesis, boris-thesis}
+In Argon, we ultimately decided to prefer blocks with explicit, fixed sequences of
+statements over using the sea of nodes representation. This decision was based on
+two factors. First, controllers in Spatial as discussed in Chapter~\ref{language}
+have a significantly different meaning than standard software loops because they
+include information about hardware pipeline scheduling. It is
+impractical for the compiler to continue implicitly performing code motion
+after decisions about pipeline stages have been made. Second, rediscovering each
+scope's schedule during every IR traversal can be a significant
+DSL compiler performance bottleneck for larger programs. This is particularly true in
+Spatial, as many of the graph traversals in the Spatial
+compiler are analyses which do not alter the graph and thus do not require code motion.
+In Argon, we prefer to memoize the
+schedule using explicit statement lists and schedule code motion only where valid and necessary.
 
 \section{Symbol Metadata}
+At the outset of the work in this dissertation, LMS had no unified way of maintaining
+metadata on nodes or symbols. Metadata was instead kept in an ad-hoc manner, with
+individual hash-maps created when needed and passed between compiler passes
+where required. However, with
+information like pipeline scheduling, memory banking, and register retiming,
+Spatial requires significantly more intermediate metadata between compiler passes
+than prior DSLs based on LMS. Some of this metadata needed to be updated and
+propagated across graph transformations, complicating this problem significantly.
 
-\section{Effects}
+To solve this problem, Argon supports symbol metadata as a first class citizen of the
+framework. Argon's notion of metadata also includes a contract about how to
+propagate information through graph transformations, since this can be a
+particularly tricky implementation detail to reason about in practice.
 
-\section{Compiler Traversals}
+As shown in Figure~\ref{fig:argon-metadata}, this support includes two basic parts.
+DSL metadata instances extend the \stt{Metadata} class and provide a \stt{mirror}
+method. This method tells transformers how to copy the metadata after a symbol
+holding that metadata has been changed. In practice, the mirror function is
+usually the identity.
+
+The transfer field in the metadata informs the transformer whether to
+propagate or drop the metadata. To make it easier to reason about
+whether propagation across transformers is likely to be valid, we simply
+term these transfer options based on when the metadata is set.
+Metadata which is created by the original user
+program (\stt{SetByUser}) almost always needs to be preserved. For example, explicit scheduling flags
+from the user like ``Sequential'' must not be dropped.
+
+Metadata which is set by an analysis pass upon visiting the annotated symbol (\stt{SetAtSelf}) can
+generally be preserved across transformers. Since both analysis passes and
+transformers usually run in dataflow order, all information should be available
+at the time the metadata itself is transformed. For example, the initiation
+interval of a loop can be preserved once determined, unless the loop body
+itself is changed.
+
+Metadata which is set when an analysis pass visits symbols after the annotated symbol (\stt{SetAtConsumer}),
+on the other hand, generally cannot be preserved in transformers that run in
+dataflow order. For example, Spatial maintains lists of reader nodes for every
+memory instantiated in the program. Since the readers are consumers of the memory,
+they must come after the memory in dataflow order. Since a transformer may change
+or remove any of these readers, the only valid thing to do with the reader metadata
+when visiting the memory node is to drop it and wait for it to be updated by the consumers.
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaDSL]
+// In Argon Framework
+abstract class Exp[C,T] {
+  lazy val data: mutable.Map[String,Metadata[_]]
+}
+
+sealed abstract class Transfer
+object SetByUser extends Transfer       // Metadata is mirrored
+object SetAtSelf extends Transfer       // Metadata is mirrored
+object SetAtConsumer extends Transfer   // Metadata is dropped
+
+abstract class Metadata[T](val transfer: Transfer) {
+  def mirror(f: Transformer): T
+}
+
+// In Spatial
+// Marks that a controller was explicitly forced by the user to be sequential
+case class ForceSequential(sequential: Boolean) extends Metadata(SetByUser)
+
+// Flags whether a Spatial controller is an inner controller or not
+case class InitiationInterval(interval: Int) extends Metadata(SetAtSelf)
+
+// The set of reads on a given memory
+case class Readers(readers: Set[Sym[_]]) extends Metadata[Sym[_]](SetAtConsumer)
+\end{lstlisting}
+\caption{Sketch of metadata support in Argon and three metadata examples from Spatial.}
+\label{fig:argon-metadata}
+\end{figure}
+
+We also use the metadata system in Argon to implement the tracking of
+scheduling dependencies. Whereas LMS uses the \stt{Reflect} wrapper node,
+Argon adds an \stt{Effects} metadata instance to track scheduling dependencies.
+The information tracked is the same but the resulting IR graph is simpler and
+somewhat easier to debug, particulary in programs with many mutations.
+
+\section{Argon Flows}
+During the development of Spatial, there was one common metadata use case that
+was particularly common and relatively easy to optimize for. These use cases
+had three common features. First, the analysis for the metadata was extremely
+simple, using only basic operations like counting or list concatenation.
+For example, the memory readers metadata in Figure~\ref{fig:argon-metadata} can be
+calculated simply by appending each reader symbol to the set of readers for its
+corresponding memory. Second, the metadata relied only on simple dataflow order,
+where it could either be calculated directly from the node's input dependencies
+or set directly by its consumers. And third, the metadata was required by most
+analysis passes but was invalidated by most transformers.
+
+The original solution in Spatial was to schedule an analysis pass which
+re-added this metadata after every transformer. This was a rather unwieldy approach,
+since the calculation of this metadata was defined across multiple analysis
+passes and had to be scheduled every time a transformer was added or moved.
+We soon realized that the characteristics listed above meant that the
+metadata could be calculated on the fly as nodes were visited, effectively meaning
+the analysis passes for this metadata could be fused with the transformer traversal.
+
+
+\begin{figure}
+\begin{lstlisting}[language=ScalaDSL]
+object MetadataOperations {
+  implicit class MemoryMetadataOps(s: Sym[_]) {
+    // Helper methods for getting and setting readers of memories
+    def readers: Set[Sym[_]]
+      = s.metadata.get("Readers").get(_.readers).getOrElse(Set.empty)
+    def readers_=(rds: Set[Sym[_]]): Unit
+      = s.metadata("Readers") = Readers(rds)
+
+    // Helper methods for the isInner property of controllers
+    def isInner: Boolean
+      = s.metadata.get("IsInner").exists(_.isInner)
+    def isInner_=(inner: Boolean): Unit
+      = s.metadata("IsInner") = IsInner(inner)
+  }
+}
+
+@flow def add_readers(a: Sym[_], op: Def[_]): Unit = a match {
+  case read: LocalMemoryRead[_] => read.memory.readers += read
+  case _ =>
+}
+
+@flow def control_level(s: Sym[_], op: Def[_]): Unit = op match {
+  case ctrl: Control[_] => s.isInner = !ctrl.block.exists(_.isController)
+  case _ =>
+}
+\end{lstlisting}
+\caption{Sketch of Argon's support for on-the-fly dataflow analyses.}
+\label{fig:argon-flows}
+\end{figure}
+
+An example of Argon's support for on-the-fly dataflow analysis is shown in
+Figure~\ref{fig:argon-flows} along with some of the helper functions Spatial
+declares to simplify the use of metadata further. The two implicit classes
+here provide simple getter and setter infix methods on symbols for operating
+with metadata. The \stt{readers} method, for example, returns the set of
+reader symbols for a memory symbol (or an empty set, if none have been found).
+
+The two methods labeled \stt{@flow} in this example declare on-the-fly dataflow
+analyses for an arbitrary symbol-def pair.
+The \stt{add\_readers} method checks whether the current node is a reader of an
+on-chip memory and appends the corresponding symbol to the list of readers for
+that memory if it is. Similary, the \stt{control\_level} method checks the
+contents of a loop for controllers and marks the loop as either an inner or
+outer controller accordingly.
+
+Argon's \stt{@flow} syntax works by using a Scala macro to convert these methods
+to partial function objects. Each object can be registered by name within the DSL definition
+in a list of dataflow analyses to run during graph traversals.
+\footnote{These rules can also be conditionally registered or unregistered at any point
+in the compilation flow, though Spatial currently does not make use of this feature.}
+Argon then runs this list of registered flows every time it creates a new node during
+staging or while running a transformer. This support in Argon drastically decreased
+the complexity of populating, updating, and tracking common metadata in Spatial.
+
+
+\section{Scala Virtualization and Scala Macros}
+At the time work on Argon began, the LMS framework depended on a Scala compiler plugin called Scala-Virtualized~\cite{scala-virtualized}. This compiler plugin adds support for
+virtualization of native Scala language features like \stt{while} and \stt{if},
+allowing the user to override their behavior by implementing custom methods.
+The goal of this plugin is to allow DSL authors to make their embedded language easier to use
+by allowing all host language features to be staged.
+
+This virtualization capability is a powerful language feature, but unfortunately was never
+officially adopted into the Scala language.
+Instead, a new project called Macro-Virtualized~\cite{macro-virtualized} was started to support the same virtualization
+capabilities using Scala macros, a native but experimental part of the Scala language.
+The Argon framework was initially developed in part as a proof of concept for
+Macro-Virtualized in the context of embedded DSLs. Support for Macro-Virtualized has since been
+added to Delite~\cite{cedric-thesis, boris-thesis} and is currently being added to LMS.
+
+While Scala macros are extremely powerful, they can also be quite difficult to understand
+and debug. This is in part due to their experimental status in Scala and general lack
+of documentation, but also because of their generative nature and their ability to perform
+completely arbitrary transformations on the annotated code. In general, experience on the
+Argon framework has shown that macros should generally be kept to a minimum set of
+well defined use cases. While the macro virtualization of Scala works sufficiently well
+to support most of Spatial's use cases, it is not yet a robust solution.
+In the future, Spatial may ultimately require a parsed frontend
+language to completely avoid host language virtualization issues.
+
+\section{Conclusion}
+Development on Argon has provided a great additional degree of freedom while
+building the Spatial compiler. It has allowed us to add new features like
+compiler parameters and has greatly decreased the complexity of adding
+complex analysis passes and metadata structures for tracking memory banking
+and controller pipelining information. Argon has proven to be a great vehicle
+for experimenting with new compiler framework features. Argon is part of the ongoing
+work at Stanford on Spatial and can be found at \url{https://spatial.stanford.edu}.
