@@ -40,12 +40,12 @@ resources that are rendered unusable. In our experiments, the number of unusable
 \subsection{Methodology}
 In order to model runtime and resource requirements of Spatial designs, we first need an estimate of the area requirements and
 propagation delay of every Spatial node. Area requirements include the number of digital signal processing
-units (DSPs), device block RAMs, LUTs, and registers that each template requires. To facilitate LUT packing estimation,
-we split template LUT resource requirements into the number of ``packable'' and ``unpackable'' LUTs required.
-%For templates with documented implementations such as floating point operations \cite{fp-altera}, we gather resource and cycle data in part by summarizing IP core documentation. However, these user manuals typically do not give resource usage breakdowns at the binary function level.
-We obtain characterization data by synthesizing multiple instances of each template instantiated for combinations of its parameters, including parallelization factor and control schedule.
+units (DSPs), device block RAMs, LUTs, and registers that each node requires. To facilitate LUT packing estimation,
+we split node LUT resource requirements into the number of ``packable'' and ``unpackable'' LUTs required.
+%For nodes with documented implementations such as floating point operations \cite{fp-altera}, we gather resource and cycle data in part by summarizing IP core documentation. However, these user manuals typically do not give resource usage breakdowns at the binary function level.
+We obtain characterization data by synthesizing multiple instances of each node instantiated for combinations of its parameters, including parallelization factor and control schedule.
 Using this data, we create analytical models of each Spatial nodes's resource requirements and cycle counts for
-a predefined fabric clock. The area and cycle count of controller templates are modeled as functions of the latencies of the nodes contained within them.
+a predefined fabric clock. The area and cycle count of controller nodes are modeled as functions of the latencies of the nodes contained within them.
 The total cycle count for a coarse-grain pipelined controller, for example,
 is modeled using the recursive function
 \begin{displaymath}
@@ -55,8 +55,8 @@ where \emph{N} is the number of iterations of the controller and \emph{nodes} is
 longest chain of dependencies within the set of children
 controllers contained in the coarse-grain pipelined controller.
 
-Most templates require about six synthesized designs to characterize their resource and area usage as a function of their parameters. Note that these models include estimates of off-chip memory access latency as a function of the
-number and length of memory commands, as well as contention due to competing accessors. Since template models are application-independent, each needs only be characterized once for a given target device and logic synthesis toolchain. The synthesis times required to model templates can therefore be amortized over many applications.
+Most nodes require about six synthesized designs to characterize their resource and area usage as a function of their parameters. Note that these models include estimates of off-chip memory access latency as a function of the
+number and length of memory commands, as well as contention due to competing accessors. Since node models are application-independent, each needs only be characterized once for a given target device and logic synthesis toolchain. The synthesis times required to model nodes can therefore be amortized over many applications.
 
 Using these models, we run a pair of analysis passes over the application's intermediate representation to estimate design cycle counts and area requirements.
 
@@ -68,7 +68,7 @@ the runtime of all controller nodes contained within them. The total propagation
 iteration of a \emph{Pipe} is the length of the body's critical path, calculated using a depth first
 search of the body's subgraph and the propagation delay of all primitive nodes within the graph.
 Input dataset sizes, given as user annotations in the high-level program, are used by the analysis pass
-along with tiling factors to determine the iteration counts for each controller template.
+along with tiling factors to determine the iteration counts for each controller.
 Iteration counts are then used to calculate the total runtime of the respective controller nodes.
 
 
@@ -92,7 +92,7 @@ One network is trained
 for each factor on a common set of 200 design samples with varying levels of resource usage to give a representative sampling of the space. Choosing the correct
 network parameters to obtain the lowest model error is typically challenging, but in our experiments we found that above four nodes in the hidden layer,
 the exact number of hidden layer nodes made little difference.
-Duplicated block RAMs are estimated as a linear function of the number of routing LUTs, as we found that this gave the best estimate of design routing complexity in practice. This linear function was fit using the same data used to train the neural networks. Like the template models, these neural networks are application independent and only need to be trained once for a given target device and toolchain.
+Duplicated block RAMs are estimated as a linear function of the number of routing LUTs, as we found that this gave the best estimate of design routing complexity in practice. This linear function was fit using the same data used to train the neural networks. Like the node models, these neural networks only need to be trained once for a given target device and toolchain.
 
 We use the raw resource counts as an input to each of our neural networks to obtain global estimates for routing LUTs,
 duplicated registers, and unavailable LUTs. We estimate the number of duplicated block RAMs using the routing LUTs.
@@ -112,7 +112,7 @@ The scheduling and memory banking options identified by the compiler, together w
 The design tuning pass is an optional compiler pass which allows for fast exploration of this design space in order to make area/runtime design tradeoffs.
 When design tuning is enabled, it repeatedly picks design points and evaluates them by rerunning the control scheduling, memory analysis, and estimation analysis passes. The output from this search is a single set of parameters from the Pareto frontier.
 
-Unfortunately, application design spaces tend to be extremely large, and exhaustive search on an entire space is often infeasible. Of the benchmarks we evaluate in Chapter~\ref{spatial-evaluation},
+Unfortunately, application design spaces tend to be extremely large, and exhaustive search on an entire space is often infeasible. Of the benchmarks we evaluate in Section~\ref{spatial-evaluation},
 only BlackScholes has a relatively small space of about $80,000$ points. While this space can be explored exhaustively by Spatial in a few minutes, other spaces are much larger, spanning $10^6$ to $10^{10}$ points and
 taking hours or days to exhaustively search. For example, even with the few explicit design parameters exposed in the code in Figure~\ref{fig:matmult}, when combined with implicit pipelining and parallelization parameters, this code already has about $2.6\times10^8$ potential designs.
 

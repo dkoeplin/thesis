@@ -16,6 +16,8 @@ The outer pattern operates over the strided index domain, expressed here as
 For the sake of brevity this notation ignores the case where \emph{b} does not
 perfectly divide \emph{d}, but this case is solved in practice with the
 addition of bounds checks on the domain of the inner loop.
+We discuss how tile sizes like \emph{b}
+can be selected automatically in Section~\ref{dse}.
 
 Table~\ref{table:stripmining} gives an overview of the rules used by the transformer
 (denoted $T$) to strip mine parallel patterns.
@@ -30,8 +32,11 @@ patterns is equivalent to a single ``flattened'' form of that same pattern. This
 breaking them up into a set of perfectly nested patterns of the same type as the original pattern.
 
 The second strip mining pass converts array slices and accesses with statically predictable access patterns into slices and accesses of larger, explicitly defined
-array memory tiles. We define tiles which have a size statically known to fit on the FPGA using array copies.
-Copies generated during strip mining will be used to infer buffers during hardware generation.
+array memory tiles. We introduce tiles which have a size statically known to fit on the FPGA by adding array slice-and-copy operations to the program. These copies are added
+outside the loop containing the associated access, with the size of the copy
+dependent on the access pattern and loop tile size.
+
+The copies generated during strip mining will be used to infer buffers during hardware generation.
 These buffers in turn will allow better usage of burst reads and writes from main memory and enable overlapping of compututation and communication using hardware prefetching.
 Array tiles which have overlap, such as those generated from sliding windows in convolution, are marked with metadata in the IR as having some reuse factor.
 Array copies with reuse have generation rules which minimize the number of redundant reads to main memory when possible.
@@ -80,17 +85,19 @@ To generate high performance hardware from parallel patterns, it is insufficient
 to exploit only a single level of parallelism. Exploiting nested parallelism
 requires mechanisms to orchestrate the flow of data through multiple pipeline
 stages while also exploiting parallelism at each stage of execution.
-The end result are pipelined loops which are themselves pipelined with other
-pipelined loops and memory controllers, resulting in a hierarchy of pipelines,
-commonly referred to as a coarse-grained pipeline (or occassionally, ``metapipeline'').
+This gives rise to a hierarchy of pipelines.
+When describing this hiearchy, we refer to a pipelined loop which has
+stages which are themselves pipelined loops as a
+``coarse-grained pipeline'' (or occassionally, ``metapipeline'').
 
-Most FPGA-specific control scheduling is done by the lower level compiler as described in Chapter~\ref{scheduling}. However, unlike the lower level Spatial compiler, the higher level
+Most FPGA-specific control scheduling is done by the lower level compiler as described in Chapter~\ref{scheduling}. However, unlike the lower level compiler, the higher level
 compiler operates on parallel patterns which have inherent parallelism information.
 We therefore perform a simple pipeline schedule analysis in the high level compiler
-so that the Spatial compiler is able to perform pipelining scheduling without
+so that the lower level compiler is able to perform pipelining scheduling without
 also having to re-derive this parallelism information.
 
-Pipeline scheduling is done as a recursive traversal of the hierarchical IR.
+Coarse-grained pipeline scheduling of outer parallel patterns is done as a recursive traversal of the hierarchical IR. Here, an outer pattern is one which does not
+contain any other patterns in any of its function bodies.
 At each level, we create pipeline schedules by first performing a topological sort on the IR
 of the body of the current parallel pattern. The result is a list of stages,
 where each stage contains a list of patterns which can be run concurrently.
@@ -154,8 +161,7 @@ generally target-agnostic. However, tile copies should only be made explicit for
 with scratchpad memory. Architectures with hierarchical memory systems
 effectively maintain memory views automatically through
 caching, making explicit copies on these architectures a waste of both
-compute cycles and memory. We discuss how tile sizes like \emph{b$_0$} and
-\emph{b$_1$} can be selected automatically in Chapter~\ref{dse}.
+compute cycles and memory.
 
 \begin{figure*}
 \centering
@@ -164,7 +170,13 @@ compute cycles and memory. We discuss how tile sizes like \emph{b$_0$} and
 \label{fig:metapipelining}
 \end{figure*}
 
-Figure~\ref{fig:metapipelining} shows a block diagram of the hardware generated for the $k$-means application.
+We next look at the resulting block diagram of the hardware generated for the
+$k$-means application (Figure~\ref{fig:metapipelining}).
+While this hardware is the result of the entire framework, we focus here just
+on the effects of the tiling and pipelining done by the high level compiler.
+We discuss how the lower level compiler introduces features like
+double buffers later in Section~\ref{memopts}, but these can be ignored
+for the purposes of this example.
 For simplicity, this diagram shows the case where the \emph{centroids} array completely fits on-chip, meaning
 we do not tile either the number of clusters \emph{k} or the number of features \emph{d}.
 
@@ -172,8 +184,7 @@ The resulting hardware design contains three sequential steps.
 The first step (Pipe~0) preloads the entire \emph{centroids} array into a buffer.
 The second step (Metapipeline A) is a coarse-grained pipeline which consists of three stages with buffers to manage communication between the stages.
 These three stages directly correspond to the three main sections of the MultiFold (Figure~\ref{fig:kmeans-fused}, line~5) used to sum and count the input points as grouped by their
-closest centroid. The first stage (Pipe~1) loads a tile of the \emph{points} array onto the FPGA. Note that this stage was double buffered by the Spatial compiler to
-enable hardware prefetching. The second stage (Pipe~2) computes the index of the closest centroid using vector compute blocks and a scalar reduction
+closest centroid. The first stage (Pipe~1) loads a tile of the \emph{points} array onto the FPGA. The second stage (Pipe~2) computes the index of the closest centroid using vector compute blocks and a scalar reduction
 tree. The third stage (Pipe~3 and Pipe~4) increments the count for this minimum index and adds the current point to the corresponding location in the
 buffer allocated for the \emph{new centroids}.
 
@@ -184,4 +195,5 @@ are then written back to main memory using a tile store unit for further use on 
 Our automatically generated hardware design for the core computation of $k$-means is very similar to the manually optimized design described by Hussain et al.~\cite{hwkmeans}.
 While the manual implementation assumes a fixed number of clusters and a small input dataset which can be preloaded onto the FPGA, we use tiling to automatically generate
 buffers and tile load units to handle arbitrarily sized data. Like the manual implementation, we automatically parallelize across centroids
-and vectorize the point distance calculations. As we see from the $k$-means example, our approach enables us to automatically generate high quality hardware implementations which are comparable to manual designs.
+and vectorize the point distance calculations. As we see from the $k$-means example, the high level compiler has produced program transformations comparable to
+those done in manual designs.

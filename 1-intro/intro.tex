@@ -93,16 +93,17 @@ architecture. This level of abstraction makes DSLs a very promising choice for t
 It also gives the DSL compiler a great deal of freedom in what it can do to implement the
 desired operations. Unfortunately, this degree of freedom also implies huge design spaces
 which can be challenging to navigate.
-In existing DSL compilers that target reconfigurable hardware (usually FPGAs),
-these complexities are solved using a kernel-based approach.
+Within the ML domain, existing DSL compilers that target reconfigurable hardware (usually FPGAs) solve these complexities using a kernel-based approach.
 The DSL compiler performs domain-specific operations, then lowers the resulting
 abstraction directly to a hardware implementation using either pre-existing, hand-written kernels in
 an HDL or implementations written in a high level synthesis language~\cite{george14fpl}.
 In these kernel-wise techniques, the compilation path tends to miss key cross-operation optimizations
 like fusion and tiling, resulting in excessive transfers to and from main memory.
+While DSLs like Darkroom~\cite{hegarty2014darkroom} in the image processing domain have demonstrated a complete compiler driven approach for generating hardware, this
+approach has not yet been generalized across domains.
 
 \section{A Framework for DSLs to FPGAs}
-The key problem with existing DSL FPGA backends is that they attempt
+The key problem with existing ML DSL FPGA backends is that they attempt
 to bridge two vastly different levels of abstraction with no intermediate
 levels. This restricts the types of optimizations the compiler can reasonably
 perform, and consequently leads to inefficient designs.
@@ -142,11 +143,11 @@ image processing, database processing, and machine learning~\cite{pldi13halide,e
 Compilation in the framework is composed of two phases. In the first phase,
 a high level compiler performs optimizations like loop fusion and tiling
 on the parallel pattern IR (Figure~\ref{fig:system-diag}b.), resulting in an
-optimized, tiled parallel pattern IR.
+optimized, tiled parallel pattern IR (Figure~\ref{fig:system-diag}c.).
 
 The portion of the IR targeted for hardware acceleration is then automatically
 lowered into a novel, hardware-specific intermediate
-representation (Figure~\ref{fig:system-diag}d.).
+representation (Figure~\ref{fig:system-diag}e.).
 We introduce this new representation, which we call the Spatial IR,
 in this work to address the problems in existing
 high-level synthesis tools. In particular, we identify several key
@@ -158,7 +159,7 @@ design leads to a representation which is semantically cleaner when targeting
 reconfigurable architectures, particularly when optimizing for data locality and parallelism.
 These abstractions help the compiler to more easily optimize designs for improved performance.
 
-The Spatial IR is then optimized and lowered further by the hardware accelerator design compiler (Figure~\ref{fig:system-diag}e.), referred to hereafter as the Spatial compiler.
+The Spatial IR is then optimized and lowered further by the hardware accelerator design compiler (Figure~\ref{fig:system-diag}f.), referred to hereafter as the Spatial compiler.
 In this work, we describe the Spatial compiler and several key optimizations it
 performs for produces performant hardware accelerator designs.
 These optimizations include specialization of on-chip memories based on access patterns and

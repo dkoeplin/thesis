@@ -21,14 +21,20 @@ As demand for customized accelerators has grown, so too has the
 demand by software engineers and domain experts for domain-specific
 languages (DSLs) which provide higher levels of abstraction and hence improved
 programmer productivity.
-Unfortunately, domain-specific methods for generating accelerators currently
-focus on library-based approaches which generate
+Unfortunately, in the domains of machine learning and data analytics,
+most domain-specific methods for generating accelerators are
+focused on library-based approaches which generate
 hardware on a per-kernel basis, resulting in excessive memory transfers and
-missing critical cross-kernel optimizations.
+missing critical cross-kernel optimizations. Other domains like
+image processing have demonstrated a more performant,
+compiler driven approach, but these frameworks have not been extended to larger
+domains. The current state of the art is to build a library or compiler for every
+new DSL. As DSLs become more ubiquitous, this approach will not scale.
 
-This dissertation describes a new system for compiling high-level applications to
-hardware accelerator designs that addresses these productivity and optimization
-challenges. To improve results above kernel-based
+This dissertation describes a new system for compiling high-level applications
+in domain specific languages to
+hardware accelerator designs that addresses these productivity, generality,
+and optimization challenges. To improve results above kernel-based
 approaches when programming in domain-specific languages, we
 introduce a waypoint between DSLs and HDLs: a new intermediate abstraction
 dedicated to representing parameterized accelerator designs

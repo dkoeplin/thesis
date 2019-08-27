@@ -9,12 +9,13 @@ Design parameters are kept as graph metadata, such that they can be independentl
 
 \include{5-compiler/figs/gemm}
 
-When discussing DFG transformations and optimizations, it is often useful to think about the graph as a controller/access tree. Figure~\ref{fig:matmult} shows an example of one such controller tree for the memory {\texttt{\small{tileB}} in the Spatial code example of matrix multiplication. Note that transfers between on-chip and off-chip memory each expand to a control node which linearly accesses the on-chip memory, in this case by iterators \texttt{e} and \texttt{f}.
+When discussing DFG transformations and optimizations, it is often useful to think about the graph as a controller/access tree. Figure~\ref{fig:matmult} shows an example of one such controller tree for the memory {\texttt{\small{tileB}} in the Spatial code example of matrix multiplication. Note that transfers between on-chip and off-chip memory each expand to a control node which linearly accesses the on-chip memory, in this case by iterators \texttt{e} and \texttt{f} which have corresponding parallelization factors
+\texttt{PAR\_E} and \texttt{PAR\_F}.
 This tree abstracts away most primitive operations, leaving only relevant controller hierarchy and the memory
 accesses for a specific memory.
 
 Within the acceleratable subset of Spatial, nodes are formally separated into three categories:
 control nodes, memory allocation nodes, and primitive nodes.
-Control nodes represent state machine structures like \texttt{\small{Foreach}} and \texttt{\small{Reduce}} described in Chapter~\ref{controls}.
+Control nodes represent state machine structures like \texttt{\small{Foreach}} and \texttt{\small{Reduce}} described in Section~\ref{controls}.
 Primitive nodes are operations which may consume, but never produce, control signals, including on-chip memory accesses.
 Primitive nodes are further broken down into ``physical'' operations requiring resources and ``ephemeral'' operations which are only used for bookkeeping purposes in the compiler. For example, bit selects and grouping of words into structs require no hardware resources but are used to track necessary wires in the generated code.

@@ -1,16 +1,15 @@
 \begin{figure}
 \centering
-
 \newsavebox{\sortMerge}
 \begin{lrbox}{\sortMerge}
-\begin{lstlisting}[language=Spatial,linewidth=0.5\columnwidth]
+\begin{lstlisting}[language=Spatial,linewidth=0.7\columnwidth]
 def Merge_Sort(offchip: DRAM[Int], offset: Int) {
   val N = 1024  // Static size of chunk to sort
   Accel {
     val data  = SRAM[Int](N)
     data load offchip(offset::N+offset)
 
-    FSM(1){m => m < N}{ m =>
+    FSM(1){m => m < N}{ m =>  // Initializes m to 1
       Foreach(0 until N by 2*m){ i =>
         val lower = FIFO[Int](N/2).reset()
         val upper = FIFO[Int](N/2).reset()
@@ -45,7 +44,7 @@ def Merge_Sort(offchip: DRAM[Int], offset: Int) {
 \end{lstlisting}
 \end{lrbox}
 
-\hspace{-15pt}\usebox{\sortMerge}
-\caption{Part of a design for in-place merge sort.}
+\hspace{-75pt}\usebox{\sortMerge}
+\caption{Part of a design for in-place merge sort in Spatial.}
 \label{fig:sortMerge}
 \end{figure}

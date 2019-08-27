@@ -11,7 +11,7 @@ Here, we allocate buffers for arrays based on data access patterns and size.
 %Since the maximum size of data inputs can not usually be inferred statically, we support the use of programmer hints about tile sizes to aid this analysis.
 %Information from these annotations is propagated through the IR during this analysis.
 All arrays with statically known sizes, such as array \emph{copies} generated in the tiling transformation described in
-Chapter~\ref{sec:strip-mining}, are assigned to buffers.
+Section~\ref{sec:strip-mining}, are assigned to buffers.
 Dynamically sized arrays are kept in main memory and we generate
 caches or buffers with gather operations for any non-affine accesses to these arrays.
 

@@ -112,7 +112,7 @@ independent loop iterations with more hardware units.  However, the compiler is
 not able to analyze loops that include non-affine accesses, limiting the
 coverage of applications that can be generated for hardware. Our work can
 handle parallel patterns with non-affine accesses by inferring required
-hardware blocks (e.g., FIFOs and CAMs) for non-affine accesses, while
+hardware blocks (e.g., FIFOs) for non-affine accesses, while
 aggressively using on-chip memory for affine parts.
 
 %More importantly, users optimizing HLS describe their program in terms of arrays with pragmas.

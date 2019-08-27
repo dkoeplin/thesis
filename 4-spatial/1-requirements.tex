@@ -19,7 +19,7 @@ on-chip scratchpad (e.g. ``block RAM'' on FPGAs), and registers.
 Unlike CPUs, which present their memory as a uniformly accessible address space,
 reconfigurable architectures require programmers to explicitly manage the memory hierarchy.
 Previous languages like Sequoia~\cite{sequoia} have demonstrated the benefits of explicit notions of memory hierarchy
-to programming language design. Moreover, loop unrolling and pipelining are essential for performance and area utilization, but these optimizations
+to programming language design. Moreover, loop unrolling and pipelining are essential for performance and area optimization, but these transformations
 require on-chip memories to be partitioned, banked, and buffered to supply the bandwidth necessary for concurrent accesses.
 These decisions are made by statically analyzing memory access patterns with respect to loop iterators.
 The accelerator design language should therefore give the user a view of the target memory
@@ -38,7 +38,7 @@ The accelerator language should therefore abstract these transfers as much as po
 
 \subsection{Host Interfaces}
 Spatial architectures are commonly used as offload application accelerators.
-In this execution model, the host generally allocates memory, prepares data structures, and interfaces with larger heterogeneous networks to receive and send data.
+In this execution mode, the host generally allocates memory, prepares data structures, and interfaces with larger heterogeneous networks to receive and send data.
 Once data is prepared, the host invokes the accelerator and either waits for completion (``blocking'' execution)
 or interacts with the perpetually running accelerator in a polling or interrupt manner (``non-blocking'' execution).
 %Manual administration of communication between the CPU and the host is generally not difficult, but it can be tedious and daunting for new users of spatial architectures.

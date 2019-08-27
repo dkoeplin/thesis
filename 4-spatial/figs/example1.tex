@@ -3,13 +3,13 @@
 \centering
 \newsavebox{\firFilter}
 \begin{lrbox}{\firFilter}
-\begin{lstlisting}[language=Spatial,linewidth=0.5\columnwidth]
+\begin{lstlisting}[language=Spatial,linewidth=0.7\columnwidth]
 def FIR_Filter(args: Array[String]) {
   val input   = StreamIn[Int](target.In)
   val output  = StreamOut[Int](target.Out)
   val weights = DRAM[Int](32)
   val width   = ArgIn[Int]
-  val P = 16 (1,1,32)
+  val P = 16 (1,1,32) // Parallelization parameter with range
   // Initialize width with the first console argument
   setArg(width, min(32, args(0).to[Int]) )
   // Transfer weights from the host to accelerator
@@ -39,7 +39,7 @@ def FIR_Filter(args: Array[String]) {
 \end{lstlisting}
 \end{lrbox}
 
-\hspace{-15pt}\usebox{\firFilter}
-\caption{A finite impulse response (FIR) filter.}
+\hspace{-30pt}\usebox{\firFilter}
+\caption{A finite impulse response (FIR) filter in Spatial.}
 \label{fig:firfilter}
 \end{figure}

@@ -8,7 +8,7 @@
 
 We conclude this chapter by comparing the performance and
 area utilization of generated FPGA implementations of a set of data analytic benchmarks.
-We focus our investigation on the relative improvements that our tiling transformations and
+We assume here that the remainder of the compiler framework is in place, and focus our evaluation on the improvements that our tiling transformations and
 coarse-grained pipeline scheduling provide relative to
 generated hardware designs that do not have these features.
 
@@ -74,7 +74,9 @@ The baseline designs were manually tuned after automatic generation and are
 representative of optimizations done by state-of-the-art high-level synthesis tools.
 In particular, each baseline design exploits data and pipelined parallelism within patterns where possible.
 Pipelined parallelism is exploited for patterns that operate on scalars. Our baseline design
-exploits locality at the level of a single DRAM burst, which on the MAX4 MAIA board is 384 bytes.
+exploits locality at the level of a single DRAM burst, which on the MAX4 MAIA board is 384 byte, but does not include further tiling or pipelining. This was done to
+give a fair estimate of the performance improvements from the tiling and pipeline
+scheduling traversals in the high level compiler.
 To isolate the effects of the amount of parallelism in our comparison, we keep
 the innermost pattern parallelism factor constant between the baseline design and our optimized versions for each benchmark.
 

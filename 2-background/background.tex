@@ -1,6 +1,12 @@
 \chapter{Background}
 \label{background}
 
+In this chapter, we provide a brief overview of DSLs as they relate to the work
+in this thesis. We then provide brief background on parallel patterns, a type of
+parallel loop abstraction for higher level languages which has previously
+been shown to provide a general, performant foundation for compiler
+intermediate representations across DSLs in a variety of domains.
+
 \section{Domain-Specific Languages}
 Domain-specific languages (DSLs) are, in general, programming languages which have specialized
 constructs limited to a specific type of computation. A typical goal of
@@ -20,9 +26,13 @@ domain-specific language originally created in 1986 for describing database oper
 for defining operations on tables of data, but little support for other types of operations.
 Compilers for SQL include query-planning optimizations which optimize the order of
 operations based on domain-specific knowledge about each operator.
-Similarly, Halide~\cite{pldi13halide} is an imperative language embedded in C++ specialized for image processing
+Similarly, Halide~\cite{pldi13halide} is a functional
+language embedded in C++ specialized for image processing
 and operations on arrays. Halide's syntax and compiler are specialized for linear and stenciled access patterns,
-as these are extremely common in operations on images.
+as these are extremely common in operations on images. One of the key innovations
+of Halide is its scheduling semantics; these semantics allow the user to specify
+lower level program schedule details separately
+from the high level program operations themselves.
 
 With the recent explosion of academic and industry interest in the machine learning (ML) domain,
 a variety of ML-specific languages have been developed.
@@ -49,12 +59,17 @@ Due to their high level of abstraction, parallel patterns are becoming
 popular for direct use in high level DSLs for improving productivity.
 More pertinently, they have also been shown to be useful as a common abstraction in compiler
 intermediate representations (IRs) across a wide variety of domains~\cite{ecoop13sujeeth,pldi13halide}.
-The combination of their high level of abstraction and large amount of semantic information
+The combination of their high level of abstraction and
+large amount of semantic information
 means that can also be efficiently mapped to a variety of hardware
 targets, including multicore CPUs~\cite{scala,haskell,delite-tecs14},
 compute clusters~\cite{mapreduce,zaharia10spark,spartan},
 GPUs~\cite{catanzaro11copperhead,micro14lee},
 and FPGAs~\cite{auerbach10lime,george14fpl}.
+While there are a variety of parallel pattern families in various programming
+languages, all aim to provide high level, functional loop abstractions which
+are implicitly parallel, usually over the contents of one or more
+collections of data.
 
 \input{2-background/figs/ppl-syntax}
 
@@ -102,12 +117,12 @@ The initial acummulator value $z$ is required to be an identity element of this 
 The main function $f$ generates an index specifying the location within the accumulator at which to reduce the generated value. We currently require the generated values to have the same arity as the full accumulator, but they may be of any size up to the size of the accumulator.
 Function $f$ then converts each index into a function that consumes the specified
 slice of the current accumulator and returns the new slice. If the pattern's
-implementation maintains multiple partial accumulators in parallel, the combine
-function $c$ reduces them into the final result.
+implementation maintains multiple partial accumulators in parallel, the
+cross-accumulator combine function $c$ reduces them into the final result.
 Note that a traditional \emph{reduce} and \emph{fold} patterns are the special
 case of MultiFold where every generated value is the full size of the accumulator.
 The additional complexity in MultiFold is to allow the expression of tiled
-parallel patterns as discussed further in Chapter~\ref{sec:strip-mining}.
+parallel patterns as discussed further in Section~\ref{sec:strip-mining}.
 
 \emph{FlatMap} generates an arbitrary number of values per index.
 These values are all concatenated into a flattened output.

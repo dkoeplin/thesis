@@ -24,8 +24,11 @@
 % to rethink or change the semantics of the source code.
 
 \section{Control Insertion}
-
-To simplify reasoning about control signals, Spatial requires that control nodes do not contain both physical primitive nodes and other control nodes. The exception to this rule is conditional \texttt{\small{if}} statements, which can be used in the same scope as primitives as long as they contain no control nodes but conditionals themselves.
+Spatial requires that control nodes do not contain both physical primitive nodes and other control nodes.
+While not strictly necessary for correctness, this transformation simplifies
+other analysis passes by providing the contract that every memory access occurs
+in an inner controller, thus making the hierarchy of control signals from outer
+controllers to inner accesses more straightforward.
 This requirement is satisfied by a DFG transformation which inserts \texttt{\small{DummyPipe}} control nodes around primitive logic in control bodies which also contain control nodes. The \texttt{\small{DummyPipe}} node is a bookkeeping control structure which is logically equivalent to a loop with exactly one iteration.
 Thereafter, control nodes with primitive nodes are called ``inner'' control nodes, while controllers which contain other nested controllers are called ``outer'' nodes.
 
@@ -36,11 +39,16 @@ Thereafter, control nodes with primitive nodes are called ``inner'' control node
 
 \section{Controller Scheduling}
 \label{scheduling}
-After controller insertion, the compiler will then schedule the operations within each controller.
+After controller insertion, the compiler will then schedule the operations within each controller. Currently, Spatial assumes a fixed clock rate across all parts of the
+hardware accelerator design, and pipelines all primitive operations to maximize
+likelihood of fitting this clock rate.
 By default, the compiler will always attempt to pipeline loops regardless of nesting level.
 The behavior of the compiler's scheduler can be overridden by the user using the directives listed in Table~\ref{t:syntaxTable}b.
 
-Inner pipeline schedules are based on their initiation interval.
+Inner pipeline schedules are based on their initiation interval in terms of clock cycles.
+The initiation interval calculated here is for a single loop iteration, independent of parallelization factor. Unless forced by the user, Spatial does not parallelize loops with an initiation
+interval greater than 1, as this will usually result in behavior inconsistent with
+sequential execution.
 The compiler first collects resource initiation intervals for each primitive node in the given controller based on an internal, target-dependent lookup table.
 Most primitive operations are pipelined for a resource initiation interval of 1.
 The compiler then calculates all loop carried dependencies within the pipeline based on the dataflow graph.

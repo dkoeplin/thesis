@@ -65,6 +65,6 @@ saveMatrix(args(2), getMatrix(C))
 {\parbox{0.4\textwidth}{\centering{a. Spatial implementation. }}} &
 {\parbox{0.6\textwidth}{\centering{b. Control/access tree for \texttt{\small{tileB}}.}}}
 \end{tabular} %% end resizebox
-\caption{Matrix multiplication ($C$~=~$A~\cdot~B$) implemented in Spatial and corresponding control/access tree IR. Control nodes are annotated with their level (outer versus inner), schedule, and loop iterator name. Memory access nodes are annotated with their parallelization factor.}
+\caption{Matrix multiplication ($C$~=~$A~\cdot~B$) implemented in Spatial and corresponding control/access tree IR. Control nodes are annotated with their control level, schedule, and loop iterator name. Outer sequential nodes are blue, outer pipeline nodes are red, and inner pipelined control nodes are green. Memory access nodes (gray) are annotated with their parallelization factor.}
 \label{fig:matmult}
 \end{figure}

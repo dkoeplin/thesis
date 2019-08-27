@@ -33,7 +33,8 @@ dram1D(addr) scatter sram1D
 // Enqueue the topmost element of stack into fifo
 fifo.enq( stack.peek )
 
-// Shift a vector of six elements from into rfile
+// Shift a vector of six elements from buffer into rfile
+// Contents of the register file are shifted over by six elements
 rfile <<= buffer(i::i+6)
 
 // Store current value of reg into sram1D at address 32

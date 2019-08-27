@@ -119,7 +119,7 @@ Depending upon access patterns, the compiler may automatically duplicate, bank, 
 \include{4-spatial/figs/memories}
 
 ``Shared'' memories are allocated by the host CPU and accessible by both the host and the accelerator.
-These memories are typically used in the offload model to transfer data between the host and the accelerator.
+These memories are typically used in the offload mode to transfer data between the host and the accelerator.
 \texttt{\small{DRAM}} templates represent the slowest, largest level of the hierarchy. To help users optimize
 memory controllers, \texttt{\small{DRAM}} is read and written using explicit transfers to and from on-chip memories.
 These transfers are specialized for predictable (\texttt{\small{load}} and \texttt{\small{store}}) and data-dependent
@@ -151,8 +151,9 @@ Programs which heavily rely on dynamic memory allocation, for example, generally
 
 %Figure~\ref{f:hostInterface} shows the basic structure of a Spatial program.
 %The \texttt{\small{Accel}} scope on line 7 explicitly partitions work between the host and accelerator.
-Spatial programs explicitly partition work between the host and the accelerator using the \texttt{\small{Accel}} scope. As shown in Table~\ref{t:syntaxTable}e, these calls are specified as either blocking or non-blocking.  Figure~\ref{fig:matmult} shows an example of a blocking call, in which the product of two
-matrices is computed in the accelerator and then passed to the host only after it is completed.
+Spatial programs explicitly partition work between the host and the accelerator using the \texttt{\small{Accel}} scope. As shown in Table~\ref{t:syntaxTable}e, these calls are specified as either blocking or non-blocking. Figure~\ref{fig:matmult} shows an example of a blocking call, in which the product of two
+matrices is computed in the accelerator and then passed to the host only after it is completed. Non-blocking mode supports asynchronous execution beteween the host
+and the accelerator, with communication happening through runtime interrupts.
 All operations called within this scope will be allocated to the targeted hardware accelerator, while all outside will be allocated to the host.
 Because of this, all operations within the \texttt{\small{Accel}} scope must be acceleratable.
 
@@ -178,6 +179,7 @@ An application's implicit and explicit application parameters together define a 
 \subsection{Examples}
 
 \input{4-spatial/figs/example1}
+
 \input{4-spatial/figs/example2}
 
 We conclude discussion of the Spatial language with two examples.

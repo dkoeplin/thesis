@@ -225,7 +225,7 @@ use the \stt{Rhs} wrapper class. A \stt{Rhs} instance can either
 be a \stt{Node}, a wrapper for a \stt{Def}, thus directly associating
 an \stt{Exp} with its definition, or a constant \stt{Const} value.
 We also provide a new \stt{Param} class for statically known values which
-the compiler can change to support application design parameters, as discussed in Chapter~\ref{language}.
+the compiler can change to support application design parameters, as discussed in Section~\ref{language}.
 
 \begin{figure}
 \begin{lstlisting}[language=ScalaDSL]
@@ -435,7 +435,7 @@ the problem of compiler pass ordering.
 
 In Argon, we ultimately decided to prefer blocks with explicit, fixed sequences of
 statements over using the sea of nodes representation. This decision was based on
-two factors. First, controllers in Spatial as discussed in Chapter~\ref{language}
+two factors. First, controllers in Spatial as discussed in Section~\ref{language}
 have a significantly different meaning than standard software loops because they
 include information about hardware pipeline scheduling. It is
 impractical for the compiler to continue implicitly performing code motion

@@ -96,7 +96,7 @@ Figure~\ref{fig:bank_alg} gives pseudocode for Spatial's algorithm to bank and b
 We then group read and write accesses on $m$ into ``compatible'' sets which occur in parallel to the same physical port but which can be banked together (lines 1 -- 14).
 Two accesses $a_1$ and $a_2$ within iteration domains $D_1$ and $D_2$
 are banking compatible ($IComp$) if
-\[ IComp(a_1,a_2) = \nexists~\vec{i} \in (D_1 \cup D_2) ~s.t.~a_1(\vec{i}) = r_2(\vec{i}) \]
+\[ IComp(a_1,a_2) = \nexists~\vec{i} \in (D_1 \cup D_2) ~s.t.~a_1(\vec{i}) = a_2(\vec{i}) \]
 where $a(i)$ is the multi-dimensional address corresponding to access $a$ for some vector of iterator values $i$.
 This check can be implemented using a polytope emptiness test.
 
@@ -105,7 +105,7 @@ However, this approach would typically use more resources than required. To mini
 Two sets of accesses $A_1$ and $A_2$ allow merging ($OComp$) if
 \[ OComp(A_1, A_2) = \nexists~ (a_1 \in A_1, a_2 \in A_2) ~s.t. \]
 \[  LCA(a_1, a_2) \in Parallel \cup (Pipe \cap Inner) \]
-where \emph{Parallel}, \emph{Pipe}, and \emph{Inner} are the set of Parallel, pipelined, and inner controllers in the program, respectively.
+where \emph{Parallel}, \emph{Pipe}, and \emph{Inner} are the set of Parallel, pipelined, and inner controllers in the program, respectively. \emph{LCA} is the least common ancestor, or the innermost node which is an ancestor of both $a_1$ and $a_2$.
 If this condition holds, all accesses between the two instances either occur sequentially or occur as part of a coarse-grain pipeline. Sequential accesses can be time multiplexed, while pipelined accesses are buffered.
 
 \emph{ReachingWrites} returns all writes in each set which may be visible to any read in the given sets of reads. Visibility is possible if the write may be executed before the read and may have an overlapping address space.

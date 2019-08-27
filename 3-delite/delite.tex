@@ -6,7 +6,7 @@ the high level compiler. The system diagram for this high level compiler is show
 Figure~\ref{fig:delite-diag}.
 As shown in this figure, the purpose of the high level compiler is to take
 programs represented in the parallel patterns described in
-Chapter~\ref{parallel-patterns} and lower them to a form which can be more easily
+Section~\ref{parallel-patterns} and lower them to a form which can be more easily
 translated to hardware. For the purposes of this chapter, we will assume the
 target DSL already has a lowering path to parallel patterns. While the
 transformations described in this chapter are generally applicable to any
@@ -23,7 +23,9 @@ by overlapping communication with computation using prefetching hardware.
 To this end, in this chapter we describe a method for automatically tiling parallel
 patterns to improve program locality and data reuse.
 Like classic loop tiling, our pattern tiling method is composed of two
-transformations: strip mining and interchange.
+transformations: strip mining and interchange. While the transformations
+proposed here are target-generic, this does not preclude them using high
+level information about the target to guide basic tradeoff decisions.
 
 As shown in Figure~\ref{fig:delite-diag}, the high level compiler is also responsible
 for performing various well known, target-agnostic transformations like
